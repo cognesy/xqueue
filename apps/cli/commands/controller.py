@@ -1,0 +1,250 @@
+"""Controller supervision CLI commands."""
+
+from __future__ import annotations
+
+from pathlib import Path
+import sys
+
+import typer
+
+from apps.cli.output import OutputFormat
+from apps.cli.runtime import run_action
+from libs.actions.controller import (
+    InstallManagedControllerAction,
+    ManagedControllerLifecycleAction,
+    ManagedControllerStatusAction,
+    RequestControllerStateAction,
+    RunControllerAction,
+    ShowControllerStatusAction,
+    UninstallManagedControllerAction,
+)
+from libs.domain.errors import ValidationError
+from libs.domain.models import ControllerState, ServiceManagerKind
+from libs.infra.database import create_session_factory, create_sqlite_engine
+from libs.services.config import ConfigLoader
+from libs.services.controller import ControllerService
+from libs.services.database import SessionManager
+from libs.services.launchd import LaunchdService
+from libs.services.systemd import SystemdUserService
+from libs.services.workers import WorkerService
+
+
+app = typer.Typer(help="Supervise configured worker pools in direct controller mode.")
+
+
+def _build_runtime(use_workspace_instance: bool):
+    workspace_root = Path.cwd()
+    config = ConfigLoader().load(
+        workspace_root=workspace_root,
+        use_workspace_instance=use_workspace_instance,
+    )
+    engine = create_sqlite_engine(config.paths.database_path)
+    session_factory = create_session_factory(engine)
+    controller_service = ControllerService(
+        SessionManager(session_factory),
+        WorkerService(),
+    )
+    return workspace_root, config, controller_service
+
+
+def _resolve_managed_platform(platform: ServiceManagerKind | None) -> ServiceManagerKind:
+    if platform is not None:
+        return platform
+    if sys.platform == "darwin":
+        return ServiceManagerKind.LAUNCHD
+    if sys.platform.startswith("linux"):
+        return ServiceManagerKind.SYSTEMD
+    raise ValidationError("no supported managed controller platform for this system", details={"platform": sys.platform})
+
+
+def _build_managed_service(platform: ServiceManagerKind | None):
+    resolved = _resolve_managed_platform(platform)
+    if resolved is ServiceManagerKind.LAUNCHD:
+        return LaunchdService(python_executable=sys.executable)
+    if resolved is ServiceManagerKind.SYSTEMD:
+        return SystemdUserService(python_executable=sys.executable)
+    raise ValidationError("unsupported managed controller platform", details={"platform": resolved.value})
+
+
+@app.command("run")
+def run_controller(
+    controller_id: str = typer.Option("default", "--controller-id"),
+    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    max_supervision_loops: int | None = typer.Option(None, "--max-supervision-loops", min=1, hidden=True),
+    use_workspace_instance: bool = typer.Option(
+        False,
+        "--workspace-instance",
+        help="Resolve runtime paths relative to the repository instance directory.",
+        hidden=True,
+    ),
+) -> None:
+    """Run the controller loop directly from the shell."""
+    workspace_root, config, controller_service = _build_runtime(use_workspace_instance)
+    config_loader = ConfigLoader()
+    action = RunControllerAction(controller_service)
+    run_action(
+        lambda: action(
+            controller_id=controller_id,
+            config=config,
+            reload_config=lambda: config_loader.load(
+                workspace_root=workspace_root,
+                use_workspace_instance=use_workspace_instance,
+            ),
+            workspace_root=workspace_root,
+            use_workspace_instance=use_workspace_instance,
+            max_supervision_loops=max_supervision_loops,
+        ),
+        output_format=output,
+    )
+
+
+@app.command("status")
+def controller_status(
+    controller_id: str = typer.Option("default", "--controller-id"),
+    platform: ServiceManagerKind | None = typer.Option(None, "--platform"),
+    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    use_workspace_instance: bool = typer.Option(
+        False,
+        "--workspace-instance",
+        help="Resolve runtime paths relative to the repository instance directory.",
+        hidden=True,
+    ),
+) -> None:
+    """Show the current controller status snapshot."""
+    workspace_root, config, controller_service = _build_runtime(use_workspace_instance)
+    if platform is not None:
+        managed_service = _build_managed_service(platform)
+        action = ManagedControllerStatusAction(managed_service)
+        run_action(lambda: action(controller_id=controller_id), output_format=output)
+        return
+
+    action = ShowControllerStatusAction(controller_service)
+    run_action(lambda: action(controller_id=controller_id, config=config), output_format=output)
+
+
+@app.command("install")
+def install_controller(
+    controller_id: str = typer.Option("default", "--controller-id"),
+    platform: ServiceManagerKind | None = typer.Option(None, "--platform"),
+    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    use_workspace_instance: bool = typer.Option(
+        False,
+        "--workspace-instance",
+        help="Resolve runtime paths relative to the repository instance directory.",
+        hidden=True,
+    ),
+) -> None:
+    """Install the managed controller service for the current platform."""
+    workspace_root, config, _ = _build_runtime(use_workspace_instance)
+    action = InstallManagedControllerAction(_build_managed_service(platform))
+    run_action(
+        lambda: action(
+            controller_id=controller_id,
+            workspace_root=workspace_root,
+            config=config,
+            use_workspace_instance=use_workspace_instance,
+        ),
+        output_format=output,
+    )
+
+
+@app.command("uninstall")
+def uninstall_controller(
+    controller_id: str = typer.Option("default", "--controller-id"),
+    platform: ServiceManagerKind | None = typer.Option(None, "--platform"),
+    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    use_workspace_instance: bool = typer.Option(
+        False,
+        "--workspace-instance",
+        help="Resolve runtime paths relative to the repository instance directory.",
+        hidden=True,
+    ),
+) -> None:
+    """Uninstall the managed controller service for the current platform."""
+    _build_runtime(use_workspace_instance)
+    action = UninstallManagedControllerAction(_build_managed_service(platform))
+    run_action(lambda: action(controller_id=controller_id), output_format=output)
+
+
+@app.command("start")
+def start_controller(
+    controller_id: str = typer.Option("default", "--controller-id"),
+    platform: ServiceManagerKind | None = typer.Option(None, "--platform"),
+    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    use_workspace_instance: bool = typer.Option(
+        False,
+        "--workspace-instance",
+        help="Resolve runtime paths relative to the repository instance directory.",
+        hidden=True,
+    ),
+) -> None:
+    """Start the managed controller service for the current platform."""
+    _build_runtime(use_workspace_instance)
+    action = ManagedControllerLifecycleAction(_build_managed_service(platform), operation="start")
+    run_action(lambda: action(controller_id=controller_id), output_format=output)
+
+
+def _request_state_command(requested_state: ControllerState):
+    def command(
+        controller_id: str = typer.Option("default", "--controller-id"),
+        platform: ServiceManagerKind | None = typer.Option(None, "--platform"),
+        output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+        use_workspace_instance: bool = typer.Option(
+            False,
+            "--workspace-instance",
+            help="Resolve runtime paths relative to the repository instance directory.",
+            hidden=True,
+        ),
+    ) -> None:
+        """Request a controller state change."""
+        _, config, controller_service = _build_runtime(use_workspace_instance)
+        if platform is not None:
+            operation = "restart" if requested_state is ControllerState.RESTARTING else "stop"
+            action = ManagedControllerLifecycleAction(_build_managed_service(platform), operation=operation)
+            run_action(lambda: action(controller_id=controller_id), output_format=output)
+            return
+
+        action = RequestControllerStateAction(controller_service)
+        run_action(
+            lambda: action(
+                controller_id=controller_id,
+                runtime_root=config.paths.runtime_root,
+                requested_state=requested_state,
+            ),
+            output_format=output,
+        )
+
+    return command
+
+
+def _request_direct_state_command(requested_state: ControllerState):
+    def command(
+        controller_id: str = typer.Option("default", "--controller-id"),
+        output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+        use_workspace_instance: bool = typer.Option(
+            False,
+            "--workspace-instance",
+            help="Resolve runtime paths relative to the repository instance directory.",
+            hidden=True,
+        ),
+    ) -> None:
+        """Request a direct-mode controller state change."""
+        _, config, controller_service = _build_runtime(use_workspace_instance)
+        action = RequestControllerStateAction(controller_service)
+        run_action(
+            lambda: action(
+                controller_id=controller_id,
+                runtime_root=config.paths.runtime_root,
+                requested_state=requested_state,
+            ),
+            output_format=output,
+        )
+
+    return command
+
+
+app.command("pause-intake")(_request_direct_state_command(ControllerState.PAUSED))
+app.command("resume-intake")(_request_direct_state_command(ControllerState.ACTIVE))
+app.command("drain")(_request_state_command(ControllerState.DRAINING))
+app.command("restart")(_request_state_command(ControllerState.RESTARTING))
+app.command("stop")(_request_state_command(ControllerState.STOPPING))

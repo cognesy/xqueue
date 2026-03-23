@@ -3,3 +3,8 @@
 .dolt/
 *.db
 .beads-credential-key
+.venv/
+__pycache__/
+*.pyc
+instance/*
+!instance/.gitkeep

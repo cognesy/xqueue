@@ -1,0 +1,109 @@
+from __future__ import annotations
+
+import json
+from datetime import UTC, datetime, timedelta
+from io import StringIO
+from pathlib import Path
+
+from rich.console import Console
+from typer.testing import CliRunner
+
+from apps.cli.main import app
+from apps.cli.output import OutputFormat, emit_result
+from libs.infra.database import create_session_factory, create_sqlite_engine
+from libs.infra.models import AttemptModel, Base, JobModel, WorkerModel
+from libs.services.database import SessionManager
+
+
+runner = CliRunner()
+
+
+def _seed_job_for_json_contract(database_path: Path) -> None:
+    engine = create_sqlite_engine(database_path)
+    Base.metadata.create_all(engine)
+    session_factory = create_session_factory(engine)
+    now = datetime(2026, 3, 22, 23, 40, tzinfo=UTC)
+
+    with SessionManager(session_factory).transaction() as session:
+        session.add(
+            WorkerModel(
+                id="worker-json",
+                state="active",
+                queues=["agent"],
+                heartbeat_at=now,
+                started_at=now,
+            )
+        )
+        session.add(
+            JobModel(
+                id="job-json-contract",
+                queue="agent",
+                command="echo json",
+                shell=True,
+                priority=10,
+                created_at=now,
+                available_at=now,
+                state="failed",
+                attempt_count=1,
+                max_attempts=1,
+                last_error="command exited with code 1",
+            )
+        )
+        session.add(
+            AttemptModel(
+                job_id="job-json-contract",
+                attempt_number=1,
+                worker_id="worker-json",
+                state="failed",
+                started_at=now,
+                finished_at=now + timedelta(seconds=1),
+                exit_code=1,
+                error="command exited with code 1",
+            )
+        )
+
+    engine.dispose()
+
+
+def test_json_output_bypasses_rich_formatting_even_with_terminal_console() -> None:
+    buffer = StringIO()
+    console = Console(file=buffer, force_terminal=True, color_system="truecolor")
+    payload = {
+        "item": {
+            "message": "x" * 240,
+            "nested": {"alpha": 1, "beta": [1, 2, 3]},
+        }
+    }
+
+    emit_result(payload, output_format=OutputFormat.JSON, console=console)
+
+    output = buffer.getvalue()
+    assert output == json.dumps(payload, indent=2) + "\n"
+    assert "\x1b[" not in output
+
+
+def test_jobs_show_json_uses_utc_timestamps_after_sqlite_round_trip(tmp_path: Path) -> None:
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        instance = Path("instance")
+        instance.mkdir(exist_ok=True)
+        _seed_job_for_json_contract(instance / "xqueue.db")
+
+        result = runner.invoke(
+            app,
+            [
+                "jobs",
+                "show",
+                "job-json-contract",
+                "--output",
+                "json",
+                "--workspace-instance",
+            ],
+        )
+
+        assert result.exit_code == 0
+        payload = json.loads(result.stdout)
+
+        assert payload["item"]["created_at"].endswith("Z")
+        assert payload["item"]["available_at"].endswith("Z")
+        assert payload["item"]["attempts"][0]["started_at"].endswith("Z")
+        assert payload["item"]["attempts"][0]["finished_at"].endswith("Z")
