@@ -312,6 +312,23 @@ When implementing or reviewing work in this repo:
 - optimize for correctness of claim/lease/cancel/timeout behavior before adding
   optional features
 
+## qaman Pilot
+
+This repo now has a minimal `qaman` rollout.
+
+Use:
+
+- `qa doctor` for shared quality-workflow readiness
+- `qa profile run default` for the deterministic shared quality lane
+- `qa profile run style` for Ruff-only checks
+- `qa profile run architecture` for the Semgrep-backed architecture audit
+- `qa progress` after capturing a baseline with `qa snap store`
+
+Boundary:
+
+- `xq doctor` / `xq health` remain for native application and runtime health
+- `qa doctor` is only about the shared `qaman` setup in this repo
+
 If forced to choose, prioritize:
 
 1. durable correctness

@@ -1,0 +1,49 @@
+project:
+  name: xqueue
+
+tools:
+  ruff:
+    command: uvx ruff check apps libs tests
+    format: json
+    format_args: --output-format=json
+    category: style
+  semgrep:
+    command: uvx semgrep scan --config .qaman/rules/xqueue-architecture-semgrep.yml apps libs tests
+    format: json
+    format_args: --json
+    category: correctness
+  pytest:
+    command: uv run pytest tests -x
+    format: junit
+    format_args: --junitxml=.qaman/state/pytest-junit.xml
+    output_file: .qaman/state/pytest-junit.xml
+    category: correctness
+
+scopes: {}
+
+profiles:
+  default:
+    description: Deterministic core verification lane plus low-risk style checks
+    tools:
+      - ruff
+      - pytest
+  tests:
+    description: Test suite
+    tools:
+      - pytest
+  style:
+    description: Ruff style and import hygiene checks
+    tools:
+      - ruff
+  architecture:
+    description: Semgrep-backed architecture audit
+    tools:
+      - semgrep
+    policy_packs:
+      - architecture
+
+policy_packs: {}
+
+storage:
+  backend: sqlite
+  path: .qaman/state/qa.db

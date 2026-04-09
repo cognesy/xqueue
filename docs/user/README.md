@@ -42,6 +42,25 @@ To inspect the resolved paths:
 uv run xq config show --workspace-instance --output json
 ```
 
+## qaman Pilot Workflow
+
+This repo now has a minimal `qaman` rollout that complements `xqueue`'s own
+operator surfaces.
+
+Use:
+
+- `qa doctor` for shared quality-workflow readiness
+- `qa profile run default` for the deterministic shared quality lane
+- `qa profile run style` for Ruff-only checks
+- `qa profile run architecture` for the Semgrep-backed architecture audit
+- `qa snap store` and `qa progress` for before/current/remaining-work visibility
+
+Boundary:
+
+- `xq doctor` / `xq health` remain the source of truth for `xqueue` runtime and
+  operational health
+- `qa doctor` is only about the repo's shared `qaman` setup
+
 ## Quick Start
 
 Enqueue a shell command:

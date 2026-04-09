@@ -11,6 +11,10 @@ Most examples below use `--workspace-instance` so repo-local state stays under
 uv sync
 uv run xq --help
 uv run xq config show --workspace-instance --output json
+qa doctor --format json
+qa profile run default --format json
+qa profile run style --format json
+qa profile run architecture --format json
 ```
 
 ## Enqueue Jobs
