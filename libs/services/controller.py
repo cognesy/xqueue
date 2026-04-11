@@ -22,6 +22,7 @@ from libs.domain.models import (
     ControllerWorkerView,
     WorkerState,
 )
+from libs.services.cli_bootstrap import xqueue_python_command
 from libs.services.database import SessionManager
 from libs.services.workers import WorkerService
 
@@ -376,10 +377,8 @@ class ControllerService:
         config: EffectiveConfig,
         use_workspace_instance: bool,
     ) -> list[str]:
-        command = [
+        command = xqueue_python_command(
             self._python_executable,
-            "-c",
-            "from apps.cli.main import main; main()",
             "worker",
             "run",
             "--worker-id",
@@ -395,7 +394,7 @@ class ControllerService:
             str(config.worker.cancel_grace_period_seconds),
             "--retry-delay-seconds",
             str(config.worker.retry_delay_seconds),
-        ]
+        )
         command.append("--execute-claimed")
         if pool.default_timeout_seconds is not None:
             command.extend(["--default-timeout-seconds", str(pool.default_timeout_seconds)])

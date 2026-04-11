@@ -34,6 +34,14 @@ Rules:
 For automation, consume `stdout` as the API payload and treat `stderr` as
 structured logs.
 
+Logging defaults live in `resources/logging/default.yaml`. Use overrides when
+you need a different local diagnostic view:
+
+```sh
+XQUEUE_LOG_LEVEL=DEBUG XQUEUE_LOG_FORMAT=console uv run xq health
+XQUEUE_LOG_LEVEL=INFO XQUEUE_LOG_FORMAT=json uv run xq jobs list -o json
+```
+
 Stable JSON shapes:
 
 - list commands: `{ "items": [...] }`

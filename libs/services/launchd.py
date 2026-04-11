@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Callable
 
 from libs.domain.models import ManagedControllerInstallView, ManagedControllerStatusView, ServiceManagerKind
+from libs.services.cli_bootstrap import xqueue_python_command
 
 
 @dataclass(frozen=True)
@@ -47,15 +48,13 @@ class LaunchdService:
         label = self.service_name(controller_id)
         stdout_path = log_root / "controller" / controller_id / "launchd.stdout.log"
         stderr_path = log_root / "controller" / controller_id / "launchd.stderr.log"
-        program_arguments = [
+        program_arguments = xqueue_python_command(
             self._python_executable,
-            "-c",
-            "from apps.cli.main import main; main()",
             "controller",
             "run",
             "--controller-id",
             controller_id,
-        ]
+        )
         if use_workspace_instance:
             program_arguments.append("--workspace-instance")
 

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import subprocess
+import shlex
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
 from libs.domain.models import ManagedControllerInstallView, ManagedControllerStatusView, ServiceManagerKind
+from libs.services.cli_bootstrap import xqueue_python_command
 
 
 @dataclass(frozen=True)
@@ -44,15 +46,13 @@ class SystemdUserService:
     ) -> str:
         stdout_path = log_root / "controller" / controller_id / "systemd.stdout.log"
         stderr_path = log_root / "controller" / controller_id / "systemd.stderr.log"
-        exec_start = [
+        exec_start = xqueue_python_command(
             self._python_executable,
-            "-c",
-            "from apps.cli.main import main; main()",
             "controller",
             "run",
             "--controller-id",
             controller_id,
-        ]
+        )
         if use_workspace_instance:
             exec_start.append("--workspace-instance")
 
@@ -65,7 +65,7 @@ class SystemdUserService:
                 "Type=simple",
                 f"WorkingDirectory={workspace_root}",
                 f"Environment=XQUEUE_CONFIG_PATH={config_path}",
-                f"ExecStart={' '.join(exec_start)}",
+                f"ExecStart={shlex.join(exec_start)}",
                 "Restart=on-failure",
                 f"StandardOutput=append:{stdout_path}",
                 f"StandardError=append:{stderr_path}",

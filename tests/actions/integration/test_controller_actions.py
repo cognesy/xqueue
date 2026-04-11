@@ -7,6 +7,7 @@ from pathlib import Path
 from libs.actions.controller import RunControllerAction
 from libs.domain.config import ControllerConfig, ControllerPoolConfig, EffectiveConfig, QueueConfig, RestartPolicy, RuntimePaths, WorkerDefaults
 from libs.domain.models import ControllerState
+from libs.services.cli_bootstrap import xqueue_repo_root
 from libs.infra.database import create_session_factory, create_sqlite_engine
 from libs.infra.models import Base, WorkerModel
 from libs.services.controller import ControllerService
@@ -75,6 +76,8 @@ def test_run_controller_action_restarts_failed_pool_worker(tmp_path: Path) -> No
 
     assert result.item.state == ControllerState.STOPPED
     assert len(launch_calls) >= 2
+    assert "sys.path.insert" in launch_calls[0][2]
+    assert str(xqueue_repo_root()) in launch_calls[0][2]
     assert result.item.pools[0].workers[0].restart_count >= 1
     assert (tmp_path / "run" / "controller-default.status.json").exists()
 

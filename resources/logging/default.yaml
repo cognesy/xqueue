@@ -1,0 +1,30 @@
+version: 1
+logger: xqueue
+destination: stderr
+format: json
+level: INFO
+timestamp: iso
+events:
+  actions: true
+  workers: true
+  controller: true
+  jobs: true
+  subprocesses: true
+fields:
+  include:
+    - event
+    - level
+    - timestamp
+    - action
+    - queue
+    - job_id
+    - worker_id
+    - controller_id
+    - attempt_number
+    - duration_ms
+    - returncode
+  redact:
+    - token
+    - secret
+    - credential
+    - env

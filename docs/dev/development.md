@@ -68,6 +68,8 @@ Current pattern:
 - `libs/actions/logging.py` provides `@log_action(...)`
 - CLI shells call `configure_logging()` once at process startup
 - action logs go to `stderr` as structured JSON
+- defaults live in `resources/logging/default.yaml`
+- `XQUEUE_LOG_LEVEL` and `XQUEUE_LOG_FORMAT` override the checked-in defaults
 
 When adding a new action:
 

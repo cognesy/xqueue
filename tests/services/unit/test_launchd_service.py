@@ -3,6 +3,7 @@ from __future__ import annotations
 import plistlib
 from pathlib import Path
 
+from libs.services.cli_bootstrap import xqueue_repo_root
 from libs.services.launchd import CommandResult, LaunchdService
 
 
@@ -22,6 +23,8 @@ def test_launchd_service_renders_expected_owned_plist(tmp_path: Path) -> None:
     assert payload["RunAtLoad"] is True
     assert payload["KeepAlive"] is True
     assert payload["ProgramArguments"][-1] == "--workspace-instance"
+    assert "sys.path.insert" in payload["ProgramArguments"][2]
+    assert str(xqueue_repo_root()) in payload["ProgramArguments"][2]
     assert payload["StandardOutPath"].endswith("launchd.stdout.log")
     assert payload["StandardErrorPath"].endswith("launchd.stderr.log")
 
