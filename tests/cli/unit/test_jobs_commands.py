@@ -94,6 +94,66 @@ def _seed_jobs(instance_root: Path) -> None:
     engine.dispose()
 
 
+def _seed_job_with_multiple_attempt_logs(instance_root: Path) -> None:
+    database_path = instance_root / "xqueue.db"
+    engine = create_sqlite_engine(database_path)
+    Base.metadata.create_all(engine)
+    session_factory = create_session_factory(engine)
+    now = datetime(2026, 3, 22, 20, 45, tzinfo=UTC)
+    log_root = instance_root / "logs"
+    log_root.mkdir(parents=True, exist_ok=True)
+    attempt_1_stdout = log_root / "job-tail-attempt-1.stdout.log"
+    attempt_1_stderr = log_root / "job-tail-attempt-1.stderr.log"
+    attempt_2_stdout = log_root / "job-tail-attempt-2.stdout.log"
+    attempt_2_stderr = log_root / "job-tail-attempt-2.stderr.log"
+    attempt_1_stdout.write_text("attempt-1-line-1\nattempt-1-line-2\n")
+    attempt_1_stderr.write_text("attempt-1-error\n")
+    attempt_2_stdout.write_text("attempt-2-line-1\n")
+    attempt_2_stderr.write_text("attempt-2-error\n")
+
+    with SessionManager(session_factory).transaction() as session:
+        session.add(
+            JobModel(
+                id="job-tail-multi",
+                queue="agent",
+                command="echo multi",
+                shell=True,
+                priority=20,
+                created_at=now,
+                available_at=now,
+                state="failed",
+                attempt_count=2,
+                max_attempts=2,
+            )
+        )
+        session.add_all(
+            [
+                AttemptModel(
+                    job_id="job-tail-multi",
+                    attempt_number=1,
+                    state="failed",
+                    started_at=now,
+                    finished_at=now + timedelta(seconds=1),
+                    exit_code=1,
+                    stdout_path=str(attempt_1_stdout),
+                    stderr_path=str(attempt_1_stderr),
+                ),
+                AttemptModel(
+                    job_id="job-tail-multi",
+                    attempt_number=2,
+                    state="failed",
+                    started_at=now + timedelta(seconds=2),
+                    finished_at=now + timedelta(seconds=3),
+                    exit_code=2,
+                    stdout_path=str(attempt_2_stdout),
+                    stderr_path=str(attempt_2_stderr),
+                ),
+            ]
+        )
+
+    engine.dispose()
+
+
 def test_jobs_list_returns_json_list_response(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
         instance = Path("instance")
@@ -398,3 +458,37 @@ def test_jobs_tail_returns_json_detail_response_for_latest_attempt_stderr(tmp_pa
         assert payload["item"]["stream"] == "stderr"
         assert payload["item"]["lines"] == ["line-2", "line-3"]
         assert payload["item"]["truncated"] is True
+
+
+def test_jobs_tail_selects_stdout_for_requested_attempt_number(tmp_path: Path) -> None:
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        instance = Path("instance")
+        instance.mkdir(exist_ok=True)
+        _seed_job_with_multiple_attempt_logs(instance)
+
+        result = runner.invoke(
+            app,
+            [
+                "jobs",
+                "tail",
+                "job-tail-multi",
+                "--stream",
+                "stdout",
+                "--attempt-number",
+                "1",
+                "--lines",
+                "50",
+                "--output",
+                "json",
+                "--workspace-instance",
+            ],
+        )
+
+        assert result.exit_code == 0
+        payload = json.loads(result.stdout)
+
+        assert payload["item"]["job_id"] == "job-tail-multi"
+        assert payload["item"]["attempt_number"] == 1
+        assert payload["item"]["stream"] == "stdout"
+        assert payload["item"]["lines"] == ["attempt-1-line-1", "attempt-1-line-2"]
+        assert payload["item"]["truncated"] is False

@@ -35,7 +35,7 @@ App shells must not call services directly.
 Apps:
 
 - parse CLI input
-- choose text or JSON output
+- construct an `Output` object and choose output format through contracts
 - construct actions with explicit dependencies
 - translate errors to exit codes
 
@@ -86,7 +86,7 @@ There are two important modes:
 Inspect the effective paths with:
 
 ```sh
-uv run xq config show --workspace-instance --output json
+uv run xq -o json config show --workspace-instance
 ```
 
 Important local paths:
@@ -101,7 +101,7 @@ Job attempt logs live under `log_root/jobs/<job-id>/`.
 Reset repo-local runtime state used by `--workspace-instance`:
 
 ```sh
-uv run xq db reset-workspace-instance --yes --output json
+uv run xq -o json db reset-workspace-instance --yes
 ```
 
 This removes owned repo-local DB, runtime, and log artifacts while preserving
@@ -164,7 +164,9 @@ Tests are grouped by module and level so behavior stays visible:
 
 Prioritize tests around:
 
+- TOON output contracts
 - JSON output contracts
+- field filtering and format propagation
 - state transitions
 - concurrent claims
 - cancellation and timeout behavior

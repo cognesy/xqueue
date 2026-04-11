@@ -11,18 +11,25 @@ In repository-local development mode, the important paths are:
 - `instance/config.yaml`
 
 In normal installed usage, the same paths resolve through `platformdirs`. Use
-`xq config show --output json` to confirm the effective locations on a machine.
+`xq -o json config show` to confirm the effective locations on a machine.
 
 The delivery model is at-least-once. A job can be retried after worker failure
 or stale lease recovery, so commands should be safe to run more than once.
 
-## JSON Output And Logs
+## Output Modes And Logs
 
-Operator commands support `--output text|json`.
+Operator commands support `-o` / `--output` with:
 
-- `--output text` is the default human-readable mode.
-- `--output json` writes the command result envelope to `stdout`.
+- `toon` as the default machine-friendly mode
+- `json` for stable structured envelopes
+- `jsonl` for item-by-item streaming where supported
+- `text` for human-readable output
+
+Rules:
+
+- `stdout` is the structured API payload
 - application logs use `structlog` and are emitted as JSON on `stderr`.
+- Rich is only used for `-o text`
 
 For automation, consume `stdout` as the API payload and treat `stderr` as
 structured logs.
@@ -33,6 +40,14 @@ Stable JSON shapes:
 - detail commands: `{ "item": { ... } }`
 - successful mutations: `{ "ok": true, "item": { ... } }`
 - failures: `{ "ok": false, "error": { ... } }`
+
+Useful examples:
+
+```sh
+uv run xq jobs list --workspace-instance
+uv run xq -o json jobs show <job-id> --workspace-instance
+uv run xq --fields id,state jobs list --workspace-instance
+```
 
 ## Enqueue Jobs
 
@@ -102,7 +117,7 @@ Important constraint:
 List jobs:
 
 ```sh
-uv run xq jobs list --workspace-instance --queue agent --state queued --output json
+uv run xq -o json jobs list --workspace-instance --queue agent --state queued
 ```
 
 Filter by creation/availability windows and choose a sort order:
@@ -114,13 +129,13 @@ uv run xq jobs list \
   --created-after 2026-03-22T20:30:00Z \
   --available-before 2026-03-22T21:00:00Z \
   --sort available-desc \
-  --output json
+  -o json
 ```
 
 Show one job, including attempts and events:
 
 ```sh
-uv run xq jobs show <job-id> --workspace-instance --output json
+uv run xq -o json jobs show <job-id> --workspace-instance
 ```
 
 The job detail view is the main inspection surface for:
@@ -135,7 +150,7 @@ The job detail view is the main inspection surface for:
 Tail the latest attempt stderr:
 
 ```sh
-uv run xq jobs tail <job-id> --workspace-instance --output json
+uv run xq -o json jobs tail <job-id> --workspace-instance
 ```
 
 Tail another stream or attempt:
@@ -146,7 +161,7 @@ uv run xq jobs tail <job-id> \
   --stream stdout \
   --attempt-number 1 \
   --lines 50 \
-  --output json
+  -o json
 ```
 
 ## Cancel, Retry, Delete, And Purge
@@ -173,7 +188,7 @@ uv run xq jobs retry <job-id> --workspace-instance
 Delete a non-running job and its persisted history:
 
 ```sh
-uv run xq jobs delete <job-id> --workspace-instance --output json
+uv run xq -o json jobs delete <job-id> --workspace-instance
 ```
 
 `jobs delete` is intended for cleanup. Running jobs are rejected explicitly.
@@ -196,14 +211,14 @@ uv run xq queues resume agent --workspace-instance
 Inspect queue state and counts:
 
 ```sh
-uv run xq queues list --workspace-instance --output json
-uv run xq queues stats --workspace-instance --output json
+uv run xq -o json queues list --workspace-instance
+uv run xq -o json queues stats --workspace-instance
 ```
 
 Inspect or control worker state:
 
 ```sh
-uv run xq workers list --workspace-instance --output json
+uv run xq -o json workers list --workspace-instance
 uv run xq workers drain <worker-id> --workspace-instance
 uv run xq workers stop <worker-id> --workspace-instance
 ```
@@ -241,7 +256,7 @@ uv run xq controller run --workspace-instance --controller-id default
 Inspect or control it:
 
 ```sh
-uv run xq controller status --workspace-instance --output json
+uv run xq -o json controller status --workspace-instance
 uv run xq controller pause-intake --workspace-instance
 uv run xq controller resume-intake --workspace-instance
 uv run xq controller drain --workspace-instance
@@ -266,7 +281,7 @@ Examples:
 ```sh
 uv run xq controller install --workspace-instance --platform launchd
 uv run xq controller start --workspace-instance --platform launchd
-uv run xq controller status --workspace-instance --platform launchd --output json
+uv run xq -o json controller status --workspace-instance --platform launchd
 ```
 
 Only service definitions owned by `xqueue` are managed.
@@ -276,26 +291,26 @@ Only service definitions owned by `xqueue` are managed.
 High-level health:
 
 ```sh
-uv run xq health --workspace-instance --output json
+uv run xq -o json health --workspace-instance
 ```
 
 Detailed diagnostics:
 
 ```sh
-uv run xq doctor --workspace-instance --output json
+uv run xq -o json doctor --workspace-instance
 ```
 
 Recover stale leases after a worker crash:
 
 ```sh
-uv run xq recover stale-leases --workspace-instance --output json
+uv run xq -o json recover stale-leases --workspace-instance
 ```
 
 Database maintenance:
 
 ```sh
-uv run xq db check --workspace-instance --output json
-uv run xq db vacuum --workspace-instance --output json
+uv run xq -o json db check --workspace-instance
+uv run xq -o json db vacuum --workspace-instance
 ```
 
 Run explicit retention cleanup only when you intend to prune old history:
@@ -308,7 +323,7 @@ uv run xq db cleanup-retention \
   --events \
   --logs \
   --yes \
-  --output json
+  -o json
 ```
 
 This cleanup is explicit and operator-controlled. It does not run automatically.
@@ -323,20 +338,20 @@ policy, and the recovery result is recorded in job history.
 
 If a job appears stuck in `running`:
 
-1. inspect it with `xq jobs show <job-id> --output json`
-2. inspect worker state with `xq workers list --output json`
+1. inspect it with `xq -o json jobs show <job-id>`
+2. inspect worker state with `xq -o json workers list`
 3. run `xq health` or `xq doctor`
 4. run `xq recover stale-leases` if the worker heartbeat is stale
 
-If automation needs clean JSON payloads:
+If automation needs a minimal machine payload:
 
-1. use `--output json`
+1. use `-o json` or accept the default TOON output
 2. read `stdout` for the command payload
 3. keep `stderr` separate because it contains `structlog` action logs
 
 If the runtime location is unclear:
 
-1. run `xq config show --output json`
+1. run `xq -o json config show`
 2. confirm `database_path`, `runtime_root`, and `log_root`
 
 If the controller is managed by the OS service manager:

@@ -8,15 +8,15 @@ tools:
     format_args: --output-format=json
     category: style
   semgrep:
-    command: uvx semgrep scan --config .qaman/rules/xqueue-architecture-semgrep.yml apps libs tests
+    command: uvx semgrep scan --config .xqa/rules/xqueue-architecture-semgrep.yml apps libs tests
     format: json
     format_args: --json
     category: correctness
   pytest:
     command: uv run pytest tests -x
     format: junit
-    format_args: --junitxml=.qaman/state/pytest-junit.xml
-    output_file: .qaman/state/pytest-junit.xml
+    format_args: --junitxml=.xqa/state/pytest-junit.xml
+    output_file: .xqa/state/pytest-junit.xml
     category: correctness
 
 scopes: {}
@@ -46,4 +46,4 @@ policy_packs: {}
 
 storage:
   backend: sqlite
-  path: .qaman/state/qa.db
+  path: .xqa/state/xqa.db

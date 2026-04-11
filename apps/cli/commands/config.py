@@ -6,7 +6,7 @@ from pathlib import Path
 
 import typer
 
-from apps.cli.output import OutputFormat
+from apps.cli.output import Output, OutputFormat
 from apps.cli.runtime import run_action
 from libs.actions.config import ShowConfigAction
 from libs.services.config import ConfigLoader
@@ -17,7 +17,8 @@ app = typer.Typer(help="Inspect static configuration and resolved runtime paths.
 
 @app.command("show")
 def show_config(
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    ctx: typer.Context,
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     config_path: Path | None = typer.Option(None, "--config-path"),
     use_workspace_instance: bool = typer.Option(
         False,
@@ -27,6 +28,7 @@ def show_config(
 ) -> None:
     """Show the effective xqueue configuration."""
     action = ShowConfigAction(ConfigLoader())
+    out = Output(ctx, "config.show", output)
 
     run_action(
         lambda: action(
@@ -34,5 +36,5 @@ def show_config(
             workspace_root=Path.cwd(),
             use_workspace_instance=use_workspace_instance,
         ),
-        output_format=output,
+        out=out,
     )

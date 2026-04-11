@@ -21,9 +21,9 @@ Queue and worker inspection should be first-class operations, not debug tools.
 Examples:
 
 ```sh
-xq jobs list --queue agent --state running --output json
-xq workers list --output json
-xq queues stats --output json
+xq jobs list --queue agent --state running -o json
+xq workers list -o json
+xq queues stats -o json
 ```
 
 ## Health and Recovery

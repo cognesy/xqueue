@@ -7,7 +7,7 @@ import sys
 
 import typer
 
-from apps.cli.output import OutputFormat
+from apps.cli.output import Output, OutputFormat
 from apps.cli.runtime import run_action
 from libs.actions.controller import (
     InstallManagedControllerAction,
@@ -68,8 +68,9 @@ def _build_managed_service(platform: ServiceManagerKind | None):
 
 @app.command("run")
 def run_controller(
+    ctx: typer.Context,
     controller_id: str = typer.Option("default", "--controller-id"),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     max_supervision_loops: int | None = typer.Option(None, "--max-supervision-loops", min=1, hidden=True),
     use_workspace_instance: bool = typer.Option(
         False,
@@ -82,6 +83,7 @@ def run_controller(
     workspace_root, config, controller_service = _build_runtime(use_workspace_instance)
     config_loader = ConfigLoader()
     action = RunControllerAction(controller_service)
+    out = Output(ctx, "controller.run", output)
     run_action(
         lambda: action(
             controller_id=controller_id,
@@ -94,15 +96,16 @@ def run_controller(
             use_workspace_instance=use_workspace_instance,
             max_supervision_loops=max_supervision_loops,
         ),
-        output_format=output,
+        out=out,
     )
 
 
 @app.command("status")
 def controller_status(
+    ctx: typer.Context,
     controller_id: str = typer.Option("default", "--controller-id"),
     platform: ServiceManagerKind | None = typer.Option(None, "--platform"),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -112,21 +115,23 @@ def controller_status(
 ) -> None:
     """Show the current controller status snapshot."""
     workspace_root, config, controller_service = _build_runtime(use_workspace_instance)
+    out = Output(ctx, "controller.status", output)
     if platform is not None:
         managed_service = _build_managed_service(platform)
         action = ManagedControllerStatusAction(managed_service)
-        run_action(lambda: action(controller_id=controller_id), output_format=output)
+        run_action(lambda: action(controller_id=controller_id), out=out)
         return
 
     action = ShowControllerStatusAction(controller_service)
-    run_action(lambda: action(controller_id=controller_id, config=config), output_format=output)
+    run_action(lambda: action(controller_id=controller_id, config=config), out=out)
 
 
 @app.command("install")
 def install_controller(
+    ctx: typer.Context,
     controller_id: str = typer.Option("default", "--controller-id"),
     platform: ServiceManagerKind | None = typer.Option(None, "--platform"),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -137,6 +142,7 @@ def install_controller(
     """Install the managed controller service for the current platform."""
     workspace_root, config, _ = _build_runtime(use_workspace_instance)
     action = InstallManagedControllerAction(_build_managed_service(platform))
+    out = Output(ctx, "controller.install", output)
     run_action(
         lambda: action(
             controller_id=controller_id,
@@ -144,15 +150,16 @@ def install_controller(
             config=config,
             use_workspace_instance=use_workspace_instance,
         ),
-        output_format=output,
+        out=out,
     )
 
 
 @app.command("uninstall")
 def uninstall_controller(
+    ctx: typer.Context,
     controller_id: str = typer.Option("default", "--controller-id"),
     platform: ServiceManagerKind | None = typer.Option(None, "--platform"),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -163,14 +170,15 @@ def uninstall_controller(
     """Uninstall the managed controller service for the current platform."""
     _build_runtime(use_workspace_instance)
     action = UninstallManagedControllerAction(_build_managed_service(platform))
-    run_action(lambda: action(controller_id=controller_id), output_format=output)
+    run_action(lambda: action(controller_id=controller_id), out=Output(ctx, "controller.uninstall", output))
 
 
 @app.command("start")
 def start_controller(
+    ctx: typer.Context,
     controller_id: str = typer.Option("default", "--controller-id"),
     platform: ServiceManagerKind | None = typer.Option(None, "--platform"),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -181,14 +189,21 @@ def start_controller(
     """Start the managed controller service for the current platform."""
     _build_runtime(use_workspace_instance)
     action = ManagedControllerLifecycleAction(_build_managed_service(platform), operation="start")
-    run_action(lambda: action(controller_id=controller_id), output_format=output)
+    run_action(lambda: action(controller_id=controller_id), out=Output(ctx, "controller.start", output))
 
 
 def _request_state_command(requested_state: ControllerState):
+    contract_name = {
+        ControllerState.DRAINING: "controller.drain",
+        ControllerState.RESTARTING: "controller.restart",
+        ControllerState.STOPPING: "controller.stop",
+    }[requested_state]
+
     def command(
+        ctx: typer.Context,
         controller_id: str = typer.Option("default", "--controller-id"),
         platform: ServiceManagerKind | None = typer.Option(None, "--platform"),
-        output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+        output: OutputFormat | None = typer.Option(None, "--output", "-o"),
         use_workspace_instance: bool = typer.Option(
             False,
             "--workspace-instance",
@@ -198,10 +213,11 @@ def _request_state_command(requested_state: ControllerState):
     ) -> None:
         """Request a controller state change."""
         _, config, controller_service = _build_runtime(use_workspace_instance)
+        out = Output(ctx, contract_name, output)
         if platform is not None:
             operation = "restart" if requested_state is ControllerState.RESTARTING else "stop"
             action = ManagedControllerLifecycleAction(_build_managed_service(platform), operation=operation)
-            run_action(lambda: action(controller_id=controller_id), output_format=output)
+            run_action(lambda: action(controller_id=controller_id), out=out)
             return
 
         action = RequestControllerStateAction(controller_service)
@@ -211,16 +227,22 @@ def _request_state_command(requested_state: ControllerState):
                 runtime_root=config.paths.runtime_root,
                 requested_state=requested_state,
             ),
-            output_format=output,
+            out=out,
         )
 
     return command
 
 
 def _request_direct_state_command(requested_state: ControllerState):
+    contract_name = {
+        ControllerState.PAUSED: "controller.pause-intake",
+        ControllerState.ACTIVE: "controller.resume-intake",
+    }[requested_state]
+
     def command(
+        ctx: typer.Context,
         controller_id: str = typer.Option("default", "--controller-id"),
-        output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+        output: OutputFormat | None = typer.Option(None, "--output", "-o"),
         use_workspace_instance: bool = typer.Option(
             False,
             "--workspace-instance",
@@ -231,13 +253,14 @@ def _request_direct_state_command(requested_state: ControllerState):
         """Request a direct-mode controller state change."""
         _, config, controller_service = _build_runtime(use_workspace_instance)
         action = RequestControllerStateAction(controller_service)
+        out = Output(ctx, contract_name, output)
         run_action(
             lambda: action(
                 controller_id=controller_id,
                 runtime_root=config.paths.runtime_root,
                 requested_state=requested_state,
             ),
-            output_format=output,
+            out=out,
         )
 
     return command

@@ -50,7 +50,8 @@ xq db vacuum
 
 - human-readable default output
 - structured output is a first-class interface, not a debug feature
-- every operator-facing command should support `--output text|json`
+- every operator-facing command should support `-o` / `--output`
+- the supported formats should be `toon`, `json`, `jsonl`, and `text`
 - `--output json` must be stable enough for automation via tools such as `jq`
 - non-interactive by default
 - stable exit codes
@@ -65,19 +66,24 @@ Because of that, machine-readable output must be part of the primary CLI design.
 Commands that return data or mutation results should support:
 
 ```sh
---output text
---output json
+-o toon
+-o json
+-o jsonl
+-o text
 ```
 
 Guidelines:
 
-- `text` is optimized for humans
+- `toon` is the default machine-friendly format
 - `json` is optimized for automation
+- `jsonl` is optimized for item streaming
+- `text` is optimized for humans
 - `json` output should avoid presentation-only fields
 - `json` output should use stable top-level shapes per command
 - error output should remain structured where practical
 - field naming should remain stable once released
 - JSON output should be easy to compose with `jq`
+- `--fields` should allow narrower payloads when appropriate
 
 Suggested JSON conventions:
 
@@ -103,10 +109,10 @@ Suggested error shape:
 Examples:
 
 ```sh
-xq jobs list --state queued --output json | jq
-xq jobs show <job-id> --output json | jq
-xq jobs cancel <job-id> --output json | jq
-xq queues stats --output json | jq
+xq jobs list --state queued -o json | jq
+xq jobs show <job-id> -o json | jq
+xq jobs cancel <job-id> -o json | jq
+xq queues stats -o json | jq
 ```
 
 ## Configuration Model
@@ -133,7 +139,7 @@ Configuration should not contain mutable queue state.
 The CLI should expose:
 
 ```sh
-xq config show --output json
+xq -o json config show
 ```
 
 Controller configuration should be static YAML, not mutable runtime state.

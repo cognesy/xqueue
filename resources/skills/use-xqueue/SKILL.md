@@ -38,7 +38,8 @@ Implications:
 - jobs must be safe under retry or duplicate execution
 - mutable state lives in SQLite, not YAML
 - stdout and stderr are stored in log files, not in DB blobs
-- `--output json` is the machine interface
+- TOON is the default machine interface
+- `-o json` is the stable envelope path
 - structured app logs go to `stderr`
 
 Stable JSON shapes:
@@ -71,13 +72,13 @@ Do not use this skill for:
 1. Inspect resolved paths if needed:
 
 ```sh
-uv run xq config show --output json
+uv run xq -o json config show
 ```
 
 In repo-local development, prefer:
 
 ```sh
-uv run xq config show --workspace-instance --output json
+uv run xq -o json config show --workspace-instance
 ```
 
 2. Enqueue work:
@@ -103,8 +104,9 @@ uv run xq enqueue \
 3. Inspect jobs:
 
 ```sh
-uv run xq jobs list --queue agent --output json
-uv run xq jobs show <job-id> --output json
+uv run xq jobs list --queue agent
+uv run xq -o json jobs show <job-id>
+uv run xq --fields id,state jobs list --queue agent
 ```
 
 4. Run a direct worker when needed:
@@ -112,13 +114,13 @@ uv run xq jobs show <job-id> --output json
 One-shot claim:
 
 ```sh
-uv run xq worker --queue agent --output json
+uv run xq -o json worker --queue agent
 ```
 
 Execute claimed work:
 
 ```sh
-uv run xq worker --queue agent --execute-claimed --output json
+uv run xq -o json worker --queue agent --execute-claimed
 ```
 
 Long-running direct worker:
@@ -149,7 +151,7 @@ Important constraint:
 List jobs:
 
 ```sh
-uv run xq jobs list --queue agent --state queued --output json
+uv run xq -o json jobs list --queue agent --state queued
 ```
 
 Filter and sort:
@@ -160,19 +162,19 @@ uv run xq jobs list \
   --created-after 2026-03-22T20:30:00Z \
   --available-before 2026-03-22T21:00:00Z \
   --sort available-desc \
-  --output json
+  -o json
 ```
 
 Show full detail:
 
 ```sh
-uv run xq jobs show <job-id> --output json
+uv run xq -o json jobs show <job-id>
 ```
 
 Tail attempt logs:
 
 ```sh
-uv run xq jobs tail <job-id> --output json
+uv run xq -o json jobs tail <job-id>
 uv run xq jobs tail <job-id> --stream stdout --attempt-number 1 --lines 50
 ```
 
@@ -181,7 +183,7 @@ Control jobs:
 ```sh
 uv run xq jobs cancel <job-id>
 uv run xq jobs retry <job-id>
-uv run xq jobs delete <job-id> --output json
+uv run xq -o json jobs delete <job-id>
 uv run xq jobs purge --queue agent
 ```
 
@@ -197,8 +199,8 @@ Use these carefully:
 Queue controls:
 
 ```sh
-uv run xq queues list --output json
-uv run xq queues stats --output json
+uv run xq queues list
+uv run xq -o json queues stats
 uv run xq queues pause agent
 uv run xq queues resume agent
 ```
@@ -206,7 +208,7 @@ uv run xq queues resume agent
 Worker controls:
 
 ```sh
-uv run xq workers list --output json
+uv run xq -o json workers list
 uv run xq workers pause <worker-id>
 uv run xq workers resume <worker-id>
 uv run xq workers drain <worker-id>
@@ -221,14 +223,17 @@ Semantics:
 
 ## Output Discipline For Agents
 
-Prefer `--output json` whenever an agent is consuming results programmatically.
+Prefer the default TOON output for quick agent inspection. Use `-o json` when
+you need the stable JSON envelope, and `-o jsonl` when item streaming is a
+better fit.
 
 Treat:
 
 - `stdout` as the structured API payload
 - `stderr` as structured `structlog` output
 
-Do not scrape Rich/text output if JSON is available.
+Use `--fields` to narrow TOON or JSON payloads when you only need a subset of
+fields.
 
 ## Common Mistakes To Avoid
 

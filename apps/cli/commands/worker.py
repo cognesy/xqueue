@@ -9,7 +9,7 @@ from uuid import uuid4
 
 import typer
 
-from apps.cli.output import OutputFormat
+from apps.cli.output import Output, OutputFormat
 from apps.cli.runtime import run_action
 from libs.actions.workers import RunWorkerAction, RunWorkerLoopAction
 from libs.domain.errors import ValidationError
@@ -49,6 +49,8 @@ def _validate_concurrency_mode(*, concurrency: int, continuous: bool, execute_cl
 
 
 def _run_worker_command(
+    ctx: typer.Context,
+    contract_name: str,
     worker_id: str | None = typer.Option(None, "--worker-id"),
     queue: list[str] = typer.Option(None, "--queue"),
     concurrency: int = typer.Option(1, "--concurrency", min=1),
@@ -60,7 +62,7 @@ def _run_worker_command(
     cancel_grace_period_seconds: int | None = typer.Option(None, "--cancel-grace-period-seconds", min=1),
     retry_delay_seconds: int | None = typer.Option(None, "--retry-delay-seconds", min=0),
     max_polls: int | None = typer.Option(None, "--max-polls", min=1, hidden=True),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -69,6 +71,8 @@ def _run_worker_command(
     ),
 ) -> None:
     """Register a worker and perform one claim poll."""
+    out = Output(ctx, contract_name, output)
+
     def execute():
         _validate_concurrency_mode(
             concurrency=concurrency,
@@ -119,7 +123,7 @@ def _run_worker_command(
             execute_claimed=execute_claimed,
         )
 
-    run_action(execute, output_format=output)
+    run_action(execute, out=out)
 
 
 @app.callback()
@@ -136,7 +140,7 @@ def worker_callback(
     cancel_grace_period_seconds: int | None = typer.Option(None, "--cancel-grace-period-seconds", min=1),
     retry_delay_seconds: int | None = typer.Option(None, "--retry-delay-seconds", min=0),
     max_polls: int | None = typer.Option(None, "--max-polls", min=1, hidden=True),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -148,6 +152,8 @@ def worker_callback(
     if ctx.invoked_subcommand is not None:
         return
     _run_worker_command(
+        ctx,
+        "worker",
         worker_id=worker_id,
         queue=queue,
         concurrency=concurrency,
@@ -166,6 +172,7 @@ def worker_callback(
 
 @app.command("run")
 def run_worker(
+    ctx: typer.Context,
     worker_id: str | None = typer.Option(None, "--worker-id"),
     queue: list[str] = typer.Option(None, "--queue"),
     concurrency: int = typer.Option(1, "--concurrency", min=1),
@@ -177,16 +184,18 @@ def run_worker(
     cancel_grace_period_seconds: int | None = typer.Option(None, "--cancel-grace-period-seconds", min=1),
     retry_delay_seconds: int | None = typer.Option(None, "--retry-delay-seconds", min=0),
     max_polls: int | None = typer.Option(None, "--max-polls", min=1, hidden=True),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
         help="Resolve runtime paths relative to the repository instance directory.",
         hidden=True,
     ),
-) -> None:
+    ) -> None:
     """Register a worker and perform one claim poll."""
     _run_worker_command(
+        ctx,
+        "worker.run",
         worker_id=worker_id,
         queue=queue,
         concurrency=concurrency,

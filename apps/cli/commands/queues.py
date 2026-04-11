@@ -6,7 +6,7 @@ from pathlib import Path
 
 import typer
 
-from apps.cli.output import OutputFormat
+from apps.cli.output import Output, OutputFormat
 from apps.cli.runtime import run_action
 from libs.actions.queues import ListQueueStatsAction, ListQueuesAction, PauseQueueAction, ResumeQueueAction
 from libs.infra.database import create_session_factory, create_sqlite_engine
@@ -30,7 +30,8 @@ def _build_session_manager(use_workspace_instance: bool) -> SessionManager:
 
 @app.command("list")
 def list_queues(
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    ctx: typer.Context,
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -40,12 +41,13 @@ def list_queues(
 ) -> None:
     """List known queues and their current state."""
     action = ListQueuesAction(_build_session_manager(use_workspace_instance), QueueService())
-    run_action(action, output_format=output)
+    run_action(action, out=Output(ctx, "queues.list", output))
 
 
 @app.command("stats")
 def queue_stats(
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    ctx: typer.Context,
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -55,13 +57,14 @@ def queue_stats(
 ) -> None:
     """List queue state and per-state job counts."""
     action = ListQueueStatsAction(_build_session_manager(use_workspace_instance), QueueService())
-    run_action(action, output_format=output)
+    run_action(action, out=Output(ctx, "queues.stats", output))
 
 
 @app.command("pause")
 def pause_queue(
+    ctx: typer.Context,
     queue: str = typer.Argument(..., metavar="QUEUE"),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -71,13 +74,14 @@ def pause_queue(
 ) -> None:
     """Pause a queue so new claims stop."""
     action = PauseQueueAction(_build_session_manager(use_workspace_instance), QueueService())
-    run_action(lambda: action(queue), output_format=output)
+    run_action(lambda: action(queue), out=Output(ctx, "queues.pause", output))
 
 
 @app.command("resume")
 def resume_queue(
+    ctx: typer.Context,
     queue: str = typer.Argument(..., metavar="QUEUE"),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -87,4 +91,4 @@ def resume_queue(
 ) -> None:
     """Resume a paused queue."""
     action = ResumeQueueAction(_build_session_manager(use_workspace_instance), QueueService())
-    run_action(lambda: action(queue), output_format=output)
+    run_action(lambda: action(queue), out=Output(ctx, "queues.resume", output))

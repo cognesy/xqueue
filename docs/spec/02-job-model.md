@@ -157,7 +157,8 @@ The implementation should respect the following constraints from the start:
 - Alembic must be used for schema migrations from day one
 - `platformdirs` must determine default config, state, runtime, and log paths
 - Rich must only be used for `--output text`
-- `--output json` must never depend on Rich formatting
+- `--output json`, `--output jsonl`, and `--output toon` must never depend on
+  Rich formatting
 - YAML must only be used for configuration, never for mutable queue state
 - stdout/stderr logs must live in files, not database blobs
 - Pydantic models must not be used as ORM models

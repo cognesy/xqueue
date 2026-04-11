@@ -1,7 +1,7 @@
 kind: semgrep
 description: xqueue architecture rules
 rule_sources:
-  - .qaman/rules/xqueue-architecture-semgrep.yml
+  - .xqa/rules/xqueue-architecture-semgrep.yml
 thresholds:
   max_errors: 0
 grouping:

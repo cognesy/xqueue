@@ -107,7 +107,7 @@ Allowed responsibilities:
 - parse CLI input with Typer
 - instantiate actions with explicit dependencies
 - invoke one or more actions in a simple shell flow
-- choose renderer for `--output text|json`
+- construct the shared `Output` surface and pass the command contract name
 - map domain or action exceptions to stable exit codes
 
 Forbidden responsibilities:
@@ -204,21 +204,21 @@ Infrastructure should not leak into app shells.
 
 ## Output Boundaries
 
-Text and JSON output paths must remain separate.
+Structured output paths must remain separate from human-readable rendering.
 
 Rules:
 
 - Rich is only for human-readable text output
-- `--output json` must bypass Rich entirely
+- `json`, `jsonl`, and `toon` must bypass Rich entirely
 - JSON responses should be built from domain-layer models, not presentation
   models
 - presentation-only fields must not leak into JSON output
 
 Practical implication:
 
-- app shells choose the renderer
+- app shells choose the command contract and local output override
 - actions return domain results
-- text renderers format those results for humans
+- the `Output` object owns TOON/JSON/JSONL/text dispatch
 - JSON serialization uses stable domain contracts directly
 
 ## Persistence Boundaries

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import typer
 
-from apps.cli.output import OutputFormat
+from apps.cli.output import Output, OutputFormat
 from apps.cli.runtime import run_action
 from libs.actions.jobs import EnqueueJobAction
 from libs.domain.errors import ValidationError
@@ -47,7 +47,7 @@ def register(app: typer.Typer) -> None:
         max_attempts: int = typer.Option(1, "--max-attempts"),
         created_by: str | None = typer.Option(None, "--created-by"),
         env: list[str] = typer.Option(None, "--env"),
-        output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+        output: OutputFormat | None = typer.Option(None, "--output", "-o"),
         use_workspace_instance: bool = typer.Option(
             False,
             "--workspace-instance",
@@ -81,4 +81,4 @@ def register(app: typer.Typer) -> None:
             )
             return action(payload)
 
-        run_action(execute, output_format=output)
+        run_action(execute, out=Output(ctx, "enqueue", output))

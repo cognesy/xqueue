@@ -25,6 +25,32 @@ def test_controller_status_returns_stopped_json_without_runtime_state(tmp_path: 
         assert payload["item"]["controller_id"] == "default"
 
 
+def test_controller_run_returns_json_with_bounded_supervision_loop(tmp_path: Path) -> None:
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        Path("instance").mkdir(exist_ok=True)
+
+        result = runner.invoke(
+            app,
+            [
+                "controller",
+                "run",
+                "--max-supervision-loops",
+                "1",
+                "--output",
+                "json",
+                "--workspace-instance",
+            ],
+        )
+
+        assert result.exit_code == 0
+        payload = json.loads(result.stdout)
+        assert payload["item"]["controller_id"] == "default"
+        assert payload["item"]["state"] == "stopped"
+        assert payload["item"]["process_id"] is not None
+        assert payload["item"]["pools"] == []
+        assert Path("instance/run/controller-default.status.json").exists()
+
+
 def test_controller_pause_resume_drain_restart_stop_return_mutation_json(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
         instance = Path("instance")

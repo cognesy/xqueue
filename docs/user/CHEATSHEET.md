@@ -10,11 +10,12 @@ Most examples below use `--workspace-instance` so repo-local state stays under
 ```sh
 uv sync
 uv run xq --help
-uv run xq config show --workspace-instance --output json
-qa doctor --format json
-qa profile run default --format json
-qa profile run style --format json
-qa profile run architecture --format json
+uv run xq
+uv run xq -o json config show --workspace-instance
+xqa doctor --format json
+xqa profile run default --format json
+xqa profile run style --format json
+xqa profile run architecture --format json
 ```
 
 ## Enqueue Jobs
@@ -43,10 +44,11 @@ uv run xq enqueue \
 
 ```sh
 uv run xq jobs list --workspace-instance
-uv run xq jobs list --workspace-instance --queue agent --state queued --output json
-uv run xq jobs show <job-id> --workspace-instance --output json
-uv run xq jobs tail <job-id> --workspace-instance --output json
+uv run xq -o json jobs list --workspace-instance --queue agent --state queued
+uv run xq -o json jobs show <job-id> --workspace-instance
+uv run xq -o json jobs tail <job-id> --workspace-instance
 uv run xq jobs tail <job-id> --workspace-instance --stream stdout --attempt-number 1 --lines 50
+uv run xq --fields id,state jobs list --workspace-instance
 ```
 
 Filter and sort:
@@ -58,7 +60,7 @@ uv run xq jobs list \
   --created-after 2026-03-22T20:30:00Z \
   --available-before 2026-03-22T21:00:00Z \
   --sort available-desc \
-  --output json
+  -o json
 ```
 
 ## Control Jobs
@@ -66,7 +68,7 @@ uv run xq jobs list \
 ```sh
 uv run xq jobs cancel <job-id> --workspace-instance
 uv run xq jobs retry <job-id> --workspace-instance
-uv run xq jobs delete <job-id> --workspace-instance --output json
+uv run xq -o json jobs delete <job-id> --workspace-instance
 uv run xq jobs purge --queue agent --workspace-instance
 ```
 
@@ -75,17 +77,17 @@ uv run xq jobs purge --queue agent --workspace-instance
 One-shot claim:
 
 ```sh
-uv run xq worker --workspace-instance --queue agent --output json
+uv run xq -o json worker --workspace-instance --queue agent
 ```
 
 Execute claimed work:
 
 ```sh
 uv run xq worker \
+  -o json \
   --workspace-instance \
   --queue agent \
-  --execute-claimed \
-  --output json
+  --execute-claimed
 ```
 
 Continuous direct worker with real concurrency:
@@ -114,12 +116,12 @@ Useful worker options:
 ## Queue And Worker Controls
 
 ```sh
-uv run xq queues list --workspace-instance --output json
-uv run xq queues stats --workspace-instance --output json
+uv run xq -o json queues list --workspace-instance
+uv run xq -o json queues stats --workspace-instance
 uv run xq queues pause agent --workspace-instance
 uv run xq queues resume agent --workspace-instance
 
-uv run xq workers list --workspace-instance --output json
+uv run xq -o json workers list --workspace-instance
 uv run xq workers pause <worker-id> --workspace-instance
 uv run xq workers resume <worker-id> --workspace-instance
 uv run xq workers drain <worker-id> --workspace-instance
@@ -132,7 +134,7 @@ Run directly:
 
 ```sh
 uv run xq controller run --workspace-instance --controller-id default
-uv run xq controller status --workspace-instance --output json
+uv run xq -o json controller status --workspace-instance
 ```
 
 Direct-mode control:
@@ -150,7 +152,7 @@ Managed mode:
 ```sh
 uv run xq controller install --workspace-instance --platform launchd
 uv run xq controller start --workspace-instance --platform launchd
-uv run xq controller status --workspace-instance --platform launchd --output json
+uv run xq -o json controller status --workspace-instance --platform launchd
 uv run xq controller restart --workspace-instance --platform launchd
 uv run xq controller stop --workspace-instance --platform launchd
 uv run xq controller uninstall --workspace-instance --platform launchd
@@ -161,18 +163,20 @@ uv run xq controller uninstall --workspace-instance --platform launchd
 ## Health And Recovery
 
 ```sh
-uv run xq health --workspace-instance --output json
-uv run xq doctor --workspace-instance --output json
-uv run xq recover stale-leases --workspace-instance --output json
+uv run xq -o json health --workspace-instance
+uv run xq -o json doctor --workspace-instance
+uv run xq -o json recover stale-leases --workspace-instance
 ```
 
 ## Database And Cleanup
 
 ```sh
-uv run xq db check --workspace-instance --output json
-uv run xq db vacuum --workspace-instance --output json
-uv run xq db cleanup-retention --workspace-instance --output json
-uv run xq db reset-workspace-instance --yes --output json
+uv run xq -o json db check --workspace-instance
+uv run xq -o json db vacuum --workspace-instance
+uv run xq -o json db cleanup-retention --workspace-instance
+uv run xq -o json db reset-workspace-instance --yes
+uv run xq hooks install
+uv run xq hooks status -o json
 ```
 
 ## JSON Output Rules
@@ -181,6 +185,7 @@ uv run xq db reset-workspace-instance --yes --output json
 - detail commands: `{ "item": { ... } }`
 - successful mutations: `{ "ok": true, "item": { ... } }`
 - structured logs go to `stderr`
+- TOON is the default stdout format
 
 For more detail, see
 [README.md](/Users/ddebowczyk/projects/xqueue/docs/user/README.md) and

@@ -99,6 +99,34 @@ def test_db_cleanup_retention_requires_yes(tmp_path: Path) -> None:
         assert payload["error"]["code"] == "validation_error"
 
 
+def test_db_cleanup_retention_requires_at_least_one_artifact_class(tmp_path: Path) -> None:
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        Path("instance").mkdir(exist_ok=True)
+
+        result = runner.invoke(
+            app,
+            [
+                "db",
+                "cleanup-retention",
+                "--older-than-hours",
+                "24",
+                "--yes",
+                "--no-attempts",
+                "--no-events",
+                "--no-logs",
+                "--output",
+                "json",
+                "--workspace-instance",
+            ],
+        )
+
+        assert result.exit_code == int(ExitCode.VALIDATION_ERROR)
+        payload = json.loads(result.stdout)
+        assert payload["ok"] is False
+        assert payload["error"]["code"] == "validation_error"
+        assert payload["error"]["message"] == "cleanup-retention requires at least one selected artifact class"
+
+
 def test_db_cleanup_retention_prunes_old_attempts_events_and_logs(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
         instance = Path("instance")

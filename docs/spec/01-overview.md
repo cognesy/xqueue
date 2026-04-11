@@ -36,7 +36,8 @@ Additional implementation guidance:
   output
 - database models and API/data models should remain separate concerns
 - Rich must only affect `--output text`
-- `--output json` must bypass presentation formatting entirely
+- `--output json`, `--output jsonl`, and `--output toon` must bypass
+  presentation formatting entirely
 - YAML is for static configuration, never for mutable queue state
 - application logs should be structured and emitted through `structlog`
 - prefer standard `subprocess` plus process groups over heavier execution

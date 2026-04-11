@@ -6,7 +6,7 @@ from pathlib import Path
 
 import typer
 
-from apps.cli.output import OutputFormat
+from apps.cli.output import Output, OutputFormat
 from apps.cli.runtime import run_action
 from libs.actions.jobs import (
     CancelJobAction,
@@ -41,6 +41,7 @@ def _build_session_manager(use_workspace_instance: bool) -> SessionManager:
 
 @app.command("list")
 def list_jobs(
+    ctx: typer.Context,
     queue: str | None = typer.Option(None, "--queue"),
     state: JobState | None = typer.Option(None, "--state"),
     worker_id: str | None = typer.Option(None, "--worker-id"),
@@ -50,7 +51,7 @@ def list_jobs(
     available_before: str | None = typer.Option(None, "--available-before", help="Inclusive ISO-8601 upper bound for available_at."),
     sort: JobListSort = typer.Option(JobListSort.CREATED_DESC, "--sort"),
     limit: int = typer.Option(50, "--limit", min=1, max=500),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -71,13 +72,14 @@ def list_jobs(
         sort=sort,
         limit=limit,
     )
-    run_action(lambda: action(filters), output_format=output)
+    run_action(lambda: action(filters), out=Output(ctx, "jobs.list", output))
 
 
 @app.command("show")
 def show_job(
+    ctx: typer.Context,
     job_id: str = typer.Argument(..., metavar="JOB_ID"),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -87,13 +89,14 @@ def show_job(
 ) -> None:
     """Show the detailed state for a single job."""
     action = ShowJobAction(_build_session_manager(use_workspace_instance), JobService())
-    run_action(lambda: action(job_id), output_format=output)
+    run_action(lambda: action(job_id), out=Output(ctx, "jobs.show", output))
 
 
 @app.command("cancel")
 def cancel_job(
+    ctx: typer.Context,
     job_id: str = typer.Argument(..., metavar="JOB_ID"),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -103,13 +106,14 @@ def cancel_job(
 ) -> None:
     """Cancel a queued job or request cancellation for a running job."""
     action = CancelJobAction(_build_session_manager(use_workspace_instance), JobService())
-    run_action(lambda: action(job_id), output_format=output)
+    run_action(lambda: action(job_id), out=Output(ctx, "jobs.cancel", output))
 
 
 @app.command("retry")
 def retry_job(
+    ctx: typer.Context,
     job_id: str = typer.Argument(..., metavar="JOB_ID"),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -119,13 +123,14 @@ def retry_job(
 ) -> None:
     """Requeue a failed or canceled job."""
     action = RetryJobAction(_build_session_manager(use_workspace_instance), JobService())
-    run_action(lambda: action(job_id), output_format=output)
+    run_action(lambda: action(job_id), out=Output(ctx, "jobs.retry", output))
 
 
 @app.command("delete")
 def delete_job(
+    ctx: typer.Context,
     job_id: str = typer.Argument(..., metavar="JOB_ID"),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -139,16 +144,17 @@ def delete_job(
         JobService(),
         JobLogService(),
     )
-    run_action(lambda: action(job_id), output_format=output)
+    run_action(lambda: action(job_id), out=Output(ctx, "jobs.delete", output))
 
 
 @app.command("tail")
 def tail_job_logs(
+    ctx: typer.Context,
     job_id: str = typer.Argument(..., metavar="JOB_ID"),
     stream: AttemptLogStream = typer.Option(AttemptLogStream.STDERR, "--stream"),
     lines: int = typer.Option(20, "--lines", min=1),
     attempt_number: int | None = typer.Option(None, "--attempt-number", min=1),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -169,14 +175,15 @@ def tail_job_logs(
             lines=lines,
             attempt_number=attempt_number,
         ),
-        output_format=output,
+        out=Output(ctx, "jobs.tail", output),
     )
 
 
 @app.command("purge")
 def purge_jobs(
+    ctx: typer.Context,
     queue: str = typer.Option(..., "--queue"),
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -186,4 +193,4 @@ def purge_jobs(
 ) -> None:
     """Delete queued or retry-scheduled jobs for a queue."""
     action = PurgeJobsAction(_build_session_manager(use_workspace_instance), QueueService())
-    run_action(lambda: action(queue), output_format=output)
+    run_action(lambda: action(queue), out=Output(ctx, "jobs.purge", output))

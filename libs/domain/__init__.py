@@ -45,7 +45,7 @@ from .models import (
     WorkerState,
     WorkerView,
 )
-from .responses import DetailResponse, ErrorDetail, ErrorResponse, ListResponse, MutationResponse
+from .responses import DetailResponse, ErrorDetail, ErrorResponse, ListResponse, MutationResponse, PayloadConvertible
 
 __all__ = [
     "AttemptState",
@@ -83,6 +83,7 @@ __all__ = [
     "ListResponse",
     "MutationResponse",
     "NotFoundError",
+    "PayloadConvertible",
     "ProcessExecutionResult",
     "PurgeJobsResult",
     "QueueConfig",

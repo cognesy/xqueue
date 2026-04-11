@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime, timedelta
-from io import StringIO
 from pathlib import Path
 
-from rich.console import Console
+import click
+from typer import Context
 from typer.testing import CliRunner
 
 from apps.cli.main import app
-from apps.cli.output import OutputFormat, emit_result
+from apps.cli.output import Output, OutputFormat
 from libs.infra.database import create_session_factory, create_sqlite_engine
 from libs.infra.models import AttemptModel, Base, JobModel, WorkerModel
 from libs.services.database import SessionManager
@@ -66,8 +66,6 @@ def _seed_job_for_json_contract(database_path: Path) -> None:
 
 
 def test_json_output_bypasses_rich_formatting_even_with_terminal_console() -> None:
-    buffer = StringIO()
-    console = Console(file=buffer, force_terminal=True, color_system="truecolor")
     payload = {
         "item": {
             "message": "x" * 240,
@@ -75,11 +73,11 @@ def test_json_output_bypasses_rich_formatting_even_with_terminal_console() -> No
         }
     }
 
-    emit_result(payload, output_format=OutputFormat.JSON, console=console)
+    out = Output(Context(click.Command("test"), obj={"output": OutputFormat.JSON}), "config.show")
 
-    output = buffer.getvalue()
-    assert output == json.dumps(payload, indent=2) + "\n"
-    assert "\x1b[" not in output
+    rendered = out.render(payload)
+    assert rendered == json.dumps(payload, indent=2)
+    assert "\x1b[" not in rendered
 
 
 def test_jobs_show_json_uses_utc_timestamps_after_sqlite_round_trip(tmp_path: Path) -> None:

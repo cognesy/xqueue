@@ -39,27 +39,51 @@ in this guide use `--workspace-instance` so state stays under the repository
 To inspect the resolved paths:
 
 ```sh
-uv run xq config show --workspace-instance --output json
+uv run xq -o json config show --workspace-instance
 ```
 
-## qaman Pilot Workflow
+## Output Modes
 
-This repo now has a minimal `qaman` rollout that complements `xqueue`'s own
+`xq` defaults to TOON on stdout so agents get compact structured output without
+extra flags.
+
+Use `-o` / `--output` to override the format:
+
+```sh
+uv run xq jobs list --workspace-instance
+uv run xq -o json jobs show <job-id> --workspace-instance
+uv run xq -o text doctor --workspace-instance
+uv run xq --fields id,state jobs list --workspace-instance
+```
+
+Available formats:
+
+- `toon` (default)
+- `json`
+- `jsonl`
+- `text`
+
+`--fields` narrows TOON output and can also narrow JSON when explicitly
+requested. Application logs remain on `stderr`.
+
+## xqa Pilot Workflow
+
+This repo now has a minimal `xqa` rollout that complements `xqueue`'s own
 operator surfaces.
 
 Use:
 
-- `qa doctor` for shared quality-workflow readiness
-- `qa profile run default` for the deterministic shared quality lane
-- `qa profile run style` for Ruff-only checks
-- `qa profile run architecture` for the Semgrep-backed architecture audit
-- `qa snap store` and `qa progress` for before/current/remaining-work visibility
+- `xqa doctor` for shared quality-workflow readiness
+- `xqa profile run default` for the deterministic shared quality lane
+- `xqa profile run style` for Ruff-only checks
+- `xqa profile run architecture` for the Semgrep-backed architecture audit
+- `xqa snap store` and `xqa progress` for before/current/remaining-work visibility
 
 Boundary:
 
 - `xq doctor` / `xq health` remain the source of truth for `xqueue` runtime and
   operational health
-- `qa doctor` is only about the repo's shared `qaman` setup
+- `xqa doctor` is only about the repo's shared `xqa` setup
 
 ## Quick Start
 
@@ -90,7 +114,14 @@ uv run xq worker run \
 Inspect the result:
 
 ```sh
-uv run xq jobs show <job-id> --workspace-instance --output json
+uv run xq -o json jobs show <job-id> --workspace-instance
+```
+
+Install session hooks for Claude Code and Codex:
+
+```sh
+uv run xq hooks install
+uv run xq hooks status -o json
 ```
 
 ## Command Surface
@@ -108,6 +139,7 @@ Current operator-facing commands:
 - `xq doctor`
 - `xq recover stale-leases`
 - `xq db check|vacuum`
+- `xq hooks install|status`
 
 For day-to-day operation, see
 [operations.md](/Users/ddebowczyk/projects/xqueue/docs/user/operations.md).

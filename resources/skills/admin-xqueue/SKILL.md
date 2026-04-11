@@ -49,35 +49,35 @@ When something looks wrong, do this first:
 1. Check effective config and paths:
 
 ```sh
-uv run xq config show --output json
+uv run xq -o json config show
 ```
 
 2. Check high-level health:
 
 ```sh
-uv run xq health --output json
+uv run xq -o json health
 ```
 
 3. Run detailed diagnostics:
 
 ```sh
-uv run xq doctor --output json
+uv run xq -o json doctor
 ```
 
 4. Inspect current jobs, queues, workers, and controller state:
 
 ```sh
-uv run xq jobs list --output json
-uv run xq queues stats --output json
-uv run xq workers list --output json
-uv run xq controller status --output json
+uv run xq jobs list
+uv run xq -o json queues stats
+uv run xq -o json workers list
+uv run xq -o json controller status
 ```
 
 5. Inspect one suspect job in detail:
 
 ```sh
-uv run xq jobs show <job-id> --output json
-uv run xq jobs tail <job-id> --output json
+uv run xq -o json jobs show <job-id>
+uv run xq -o json jobs tail <job-id>
 ```
 
 ## Health And Diagnosis
@@ -85,8 +85,8 @@ uv run xq jobs tail <job-id> --output json
 Use:
 
 ```sh
-uv run xq health --output json
-uv run xq doctor --output json
+uv run xq -o json health
+uv run xq -o json doctor
 ```
 
 Interpretation:
@@ -107,7 +107,7 @@ Do not guess from one signal alone. Check:
 Recover stale work with:
 
 ```sh
-uv run xq recover stale-leases --output json
+uv run xq -o json recover stale-leases
 ```
 
 Use this when:
@@ -124,7 +124,7 @@ Expected outcome:
 After recovery, inspect:
 
 ```sh
-uv run xq jobs show <job-id> --output json
+uv run xq -o json jobs show <job-id>
 ```
 
 ## Queue And Worker Administration
@@ -132,8 +132,8 @@ uv run xq jobs show <job-id> --output json
 Queue controls:
 
 ```sh
-uv run xq queues list --output json
-uv run xq queues stats --output json
+uv run xq queues list
+uv run xq -o json queues stats
 uv run xq queues pause <queue>
 uv run xq queues resume <queue>
 ```
@@ -141,7 +141,7 @@ uv run xq queues resume <queue>
 Worker controls:
 
 ```sh
-uv run xq workers list --output json
+uv run xq -o json workers list
 uv run xq workers pause <worker-id>
 uv run xq workers resume <worker-id>
 uv run xq workers drain <worker-id>
@@ -162,7 +162,7 @@ Direct controller mode:
 
 ```sh
 uv run xq controller run --controller-id default
-uv run xq controller status --controller-id default --output json
+uv run xq -o json controller status --controller-id default
 uv run xq controller pause-intake --controller-id default
 uv run xq controller resume-intake --controller-id default
 uv run xq controller drain --controller-id default
@@ -190,7 +190,7 @@ macOS:
 ```sh
 uv run xq controller install --platform launchd
 uv run xq controller start --platform launchd
-uv run xq controller status --platform launchd --output json
+uv run xq -o json controller status --platform launchd
 uv run xq controller restart --platform launchd
 uv run xq controller stop --platform launchd
 uv run xq controller uninstall --platform launchd
@@ -201,7 +201,7 @@ Linux:
 ```sh
 uv run xq controller install --platform systemd
 uv run xq controller start --platform systemd
-uv run xq controller status --platform systemd --output json
+uv run xq -o json controller status --platform systemd
 uv run xq controller restart --platform systemd
 uv run xq controller stop --platform systemd
 uv run xq controller uninstall --platform systemd
@@ -214,8 +214,8 @@ Only touch service definitions owned by `xqueue`.
 Integrity and vacuum:
 
 ```sh
-uv run xq db check --output json
-uv run xq db vacuum --output json
+uv run xq -o json db check
+uv run xq -o json db vacuum
 ```
 
 Use `db check` when:
@@ -240,7 +240,7 @@ uv run xq db cleanup-retention \
   --events \
   --logs \
   --yes \
-  --output json
+  -o json
 ```
 
 This is operator-controlled. It does not run automatically.
@@ -257,7 +257,7 @@ Use this only when you intend to prune old history.
 For development in this repo only:
 
 ```sh
-uv run xq db reset-workspace-instance --yes --output json
+uv run xq -o json db reset-workspace-instance --yes
 ```
 
 This removes owned repo-local runtime artifacts while preserving
@@ -269,39 +269,38 @@ Do not use this casually on a system with data you want to keep.
 
 ### Job stuck running
 
-1. `xq jobs show <job-id> --output json`
-2. `xq workers list --output json`
-3. `xq health --output json`
-4. if lease is stale: `xq recover stale-leases --output json`
+1. `xq -o json jobs show <job-id>`
+2. `xq -o json workers list`
+3. `xq -o json health`
+4. if lease is stale: `xq -o json recover stale-leases`
 
 ### Worker looks alive but nothing is moving
 
-1. check queue pause state: `xq queues stats --output json`
-2. check worker state: `xq workers list --output json`
-3. check controller state: `xq controller status --output json`
+1. check queue pause state: `xq -o json queues stats`
+2. check worker state: `xq -o json workers list`
+3. check controller state: `xq -o json controller status`
 4. check job availability windows with `jobs list`
 
 ### Controller-managed pool is not taking new work
 
-1. `xq controller status --output json`
+1. `xq -o json controller status`
 2. check whether controller is `paused`, `draining`, or `stopped`
 3. check whether queues are paused
 4. resume intake or resume queues as appropriate
 
 ### Suspected DB problem
 
-1. `xq db check --output json`
-2. `xq doctor --output json`
-3. inspect resolved DB path with `xq config show --output json`
+1. `xq -o json db check`
+2. `xq -o json doctor`
+3. inspect resolved DB path with `xq -o json config show`
 
 ## Output Discipline For Agents
 
-Prefer JSON for automation:
+Prefer TOON for quick inspection and `-o json` for the stable envelope.
 
 - read `stdout` as the API payload
 - read `stderr` as structured `structlog` output
-
-Do not scrape text output when JSON exists.
+- use `--fields` to narrow machine-readable output when you only need a subset
 
 ## Things Not To Do
 

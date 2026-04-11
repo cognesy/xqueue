@@ -167,6 +167,56 @@ def test_worker_run_execute_claimed_completes_job_and_records_attempt(tmp_path: 
         assert Path(attempt_row.stderr_path).read_text() == ""
 
 
+def test_worker_run_continuous_execute_claimed_with_max_polls_exits_after_one_poll(tmp_path: Path) -> None:
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        instance = Path("instance")
+        instance.mkdir(exist_ok=True)
+        database_path = instance / "xqueue.db"
+        _seed_job(database_path)
+
+        result = runner.invoke(
+            app,
+            [
+                "worker",
+                "run",
+                "--worker-id",
+                "worker-cli",
+                "--queue",
+                "agent",
+                "--continuous",
+                "--execute-claimed",
+                "--max-polls",
+                "1",
+                "--output",
+                "json",
+                "--workspace-instance",
+            ],
+        )
+
+        assert result.exit_code == 0
+        payload = json.loads(result.stdout)
+        assert payload["item"]["worker"]["id"] == "worker-cli"
+        assert payload["item"]["claimed_job"]["id"] == "job-cli"
+        assert payload["item"]["claimed_job"]["state"] == "succeeded"
+
+        engine = create_sqlite_engine(database_path)
+        with engine.connect() as connection:
+            job_row = connection.execute(
+                text("SELECT state, attempt_count, worker_id FROM jobs WHERE id = :job_id"),
+                {"job_id": "job-cli"},
+            ).one()
+            attempt_count = connection.execute(
+                text("SELECT COUNT(*) FROM attempts WHERE job_id = :job_id"),
+                {"job_id": "job-cli"},
+            ).scalar_one()
+        engine.dispose()
+
+        assert job_row.state == "succeeded"
+        assert job_row.attempt_count == 1
+        assert job_row.worker_id is None
+        assert attempt_count == 1
+
+
 def test_worker_rejects_concurrency_greater_than_one_without_continuous_mode(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
         Path("instance").mkdir(exist_ok=True)

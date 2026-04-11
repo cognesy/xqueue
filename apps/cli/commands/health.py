@@ -6,7 +6,7 @@ from pathlib import Path
 
 import typer
 
-from apps.cli.output import OutputFormat
+from apps.cli.output import Output, OutputFormat
 from apps.cli.runtime import run_action
 from libs.actions.operations import HealthAction
 from libs.infra.database import create_session_factory, create_sqlite_engine
@@ -19,7 +19,8 @@ from libs.services.health import HealthService
 def register(app: typer.Typer) -> None:
     @app.command("health")
     def health(
-        output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+        ctx: typer.Context,
+        output: OutputFormat | None = typer.Option(None, "--output", "-o"),
         use_workspace_instance: bool = typer.Option(
             False,
             "--workspace-instance",
@@ -39,4 +40,4 @@ def register(app: typer.Typer) -> None:
             HealthService(),
             DatabaseMaintenanceService(engine, database_path=config.paths.database_path),
         )
-        run_action(action, output_format=output)
+        run_action(action, out=Output(ctx, "health", output))

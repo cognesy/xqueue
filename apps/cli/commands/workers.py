@@ -6,7 +6,7 @@ from pathlib import Path
 
 import typer
 
-from apps.cli.output import OutputFormat
+from apps.cli.output import Output, OutputFormat
 from apps.cli.runtime import run_action
 from libs.actions.workers import ListWorkersAction, SetWorkerStateAction
 from libs.domain.models import WorkerState
@@ -31,7 +31,8 @@ def _build_session_manager(use_workspace_instance: bool) -> SessionManager:
 
 @app.command("list")
 def list_workers(
-    output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+    ctx: typer.Context,
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
     use_workspace_instance: bool = typer.Option(
         False,
         "--workspace-instance",
@@ -41,13 +42,21 @@ def list_workers(
 ) -> None:
     """List workers with queues, heartbeat, and operational state."""
     action = ListWorkersAction(_build_session_manager(use_workspace_instance), WorkerService())
-    run_action(action, output_format=output)
+    run_action(action, out=Output(ctx, "workers.list", output))
 
 
 def _set_state_command(state: WorkerState):
+    contract_name = {
+        WorkerState.PAUSED: "workers.pause",
+        WorkerState.ACTIVE: "workers.resume",
+        WorkerState.DRAINING: "workers.drain",
+        WorkerState.STOPPED: "workers.stop",
+    }[state]
+
     def command(
+        ctx: typer.Context,
         worker_id: str = typer.Argument(..., metavar="WORKER_ID"),
-        output: OutputFormat = typer.Option(OutputFormat.TEXT, "--output"),
+        output: OutputFormat | None = typer.Option(None, "--output", "-o"),
         use_workspace_instance: bool = typer.Option(
             False,
             "--workspace-instance",
@@ -57,7 +66,7 @@ def _set_state_command(state: WorkerState):
     ) -> None:
         """Persist a worker state change."""
         action = SetWorkerStateAction(_build_session_manager(use_workspace_instance), WorkerService())
-        run_action(lambda: action(worker_id, state), output_format=output)
+        run_action(lambda: action(worker_id, state), out=Output(ctx, contract_name, output))
 
     return command
 
