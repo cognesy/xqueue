@@ -198,11 +198,11 @@ def test_jobs_pane_tmux_output_for_silent_running_job(tmp_path: Path) -> None:
 
         assert result.exit_code == 0
         output = result.stdout.strip()
-        assert "id=job-running" in output
-        assert "state=running" in output
-        assert "output_status=no output yet" in output
-        assert "size_bytes=0" in output
-        assert "modified_at=" in output
+        assert "job job-runn | running | queue agent | attempt 1" in output
+        assert "worker worker-1 | process unknown" in output
+        assert "output no output yet" in output
+        assert "stdout: 0B | modified" in output
+        assert "stderr: 0B | modified" in output
 
 
 def test_jobs_pane_tmux_output_for_running_job_with_logs(tmp_path: Path) -> None:
@@ -215,5 +215,5 @@ def test_jobs_pane_tmux_output_for_running_job_with_logs(tmp_path: Path) -> None
 
         assert result.exit_code == 0
         output = result.stdout.strip()
-        assert "id=job-running" in output
-        assert "output_status=stdout=6B stderr=8B" in output
+        assert "job job-runn | running | queue agent | attempt 1" in output
+        assert "output stdout=6B stderr=8B" in output

@@ -97,11 +97,32 @@ def render_tmux(payload: Any) -> str:
     if "item" in payload and len(payload) == 1:
         item = payload["item"]
         if isinstance(item, dict):
+            if "output_status" in item and "stdout" in item and "stderr" in item:
+                return _render_job_pane(item)
             return _render_flat(item)
         return str(item)
 
     # Fallback: flat render
     return _render_flat(payload)
+
+
+def _render_job_pane(item: Mapping[str, Any]) -> str:
+    job_id = str(item.get("id", "unknown"))
+    lines = [
+        (
+            f"job {job_id[:8]} | {item.get('state', 'unknown')} | queue {item.get('queue', 'unknown')} | "
+            f"attempt {item.get('attempt_number', '-')} | elapsed {item.get('elapsed_seconds', '-')}s"
+        ),
+        f"worker {item.get('worker_id') or '-'} | process {item.get('process_status', 'unknown')}",
+        f"output {item.get('output_status', 'unknown')}",
+    ]
+    for stream in ("stdout", "stderr"):
+        value = item.get(stream)
+        if isinstance(value, Mapping):
+            lines.append(
+                f"{stream}: {value.get('size_bytes', '-') or 0}B | modified {value.get('modified_at') or '-'} | {value.get('path') or '-'}"
+            )
+    return "\n".join(lines)
 
 
 __all__ = ["render_tmux"]
