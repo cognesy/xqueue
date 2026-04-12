@@ -16,6 +16,7 @@ from libs.services.attempts import AttemptService
 from libs.services.database import SessionManager
 from libs.services.execution import CommandExecutionService
 from libs.services.jobs import JobService
+from libs.services.metrics import MetricsService
 from libs.services.workers import WorkerService
 
 
@@ -158,6 +159,7 @@ class RunWorkerAction:
         cancel_grace_period_seconds: int = 10,
         retry_delay_seconds: int = 5,
         clock: Callable[[], datetime] = utc_now,
+        metrics: MetricsService | None = None,
     ) -> None:
         self._session_manager = session_manager
         self._worker_service = worker_service
@@ -169,6 +171,7 @@ class RunWorkerAction:
         self._cancel_grace_period_seconds = cancel_grace_period_seconds
         self._retry_delay_seconds = retry_delay_seconds
         self._clock = clock
+        self._metrics = metrics or MetricsService()
 
     @log_action(
         "run_worker",
@@ -192,6 +195,7 @@ class RunWorkerAction:
         lease_duration_seconds: int,
         execute_claimed: bool = False,
     ) -> DetailResponse:
+        self._metrics.increment("worker.polls")
         now = self._clock()
         with self._session_manager.transaction() as session:
             worker = self._worker_service.register_worker(session, payload=payload, now=now)
@@ -203,7 +207,10 @@ class RunWorkerAction:
                 lease_expires_at=now + timedelta(seconds=lease_duration_seconds),
             )
 
+        if claimed_job is not None:
+            self._metrics.increment("jobs.claimed")
         if claimed_job is not None and execute_claimed:
+            self._metrics.increment("jobs.executed")
             claimed_job = self._execute_claimed_job(
                 job_id=claimed_job.id,
                 worker_id=payload.worker_id,
@@ -217,6 +224,8 @@ class RunWorkerAction:
                     now=self._clock(),
                 )
 
+        if claimed_job is not None and execute_claimed:
+            self._metrics.increment(f"jobs.{claimed_job.state.value}")
         return DetailResponse(
             item=WorkerPollResult(
                 worker=worker,

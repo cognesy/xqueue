@@ -16,6 +16,7 @@ from apps.cli.commands.doctor import register as register_doctor
 from apps.cli.commands.health import register as register_health
 from apps.cli.commands.hooks import app as hooks_app
 from apps.cli.commands.jobs import app as jobs_app
+from apps.cli.commands.metrics import app as metrics_app
 from apps.cli.commands.queues import app as queues_app
 from apps.cli.commands.recover import app as recover_app
 from apps.cli.commands.worker import app as worker_app
@@ -32,6 +33,7 @@ app.add_typer(controller_app, name="controller")
 app.add_typer(db_app, name="db")
 app.add_typer(hooks_app, name="hooks")
 app.add_typer(jobs_app, name="jobs")
+app.add_typer(metrics_app, name="metrics")
 app.add_typer(queues_app, name="queues")
 app.add_typer(recover_app, name="recover")
 app.add_typer(worker_app, name="worker")

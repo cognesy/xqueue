@@ -13,6 +13,7 @@ from libs.domain.responses import DetailResponse, ListResponse, MutationResponse
 from libs.services.database import SessionManager
 from libs.services.job_logs import JobLogService
 from libs.services.jobs import JobService
+from libs.services.metrics import MetricsService
 from libs.services.pruning import JobPruningService
 from libs.services.queues import QueueService
 
@@ -32,11 +33,13 @@ class EnqueueJobAction:
         *,
         clock: Callable[[], datetime] = utc_now,
         id_factory: Callable[[], str] = lambda: uuid4().hex,
+        metrics: MetricsService | None = None,
     ) -> None:
         self._session_manager = session_manager
         self._job_service = job_service
         self._clock = clock
         self._id_factory = id_factory
+        self._metrics = metrics or MetricsService()
 
     @log_action(
         "enqueue_job",
@@ -59,6 +62,7 @@ class EnqueueJobAction:
                 payload=payload,
                 now=self._clock(),
             )
+        self._metrics.increment("jobs.enqueued")
         return MutationResponse(item=item)
 
 

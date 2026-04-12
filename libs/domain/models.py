@@ -274,6 +274,24 @@ class JobPaneView(BaseModel):
     stderr: JobLogLivenessView
 
 
+class RuntimeMetricsView(BaseModel):
+    """Persisted runtime metrics visible to operators."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    path: str
+    version: int = 1
+    created_at: str
+    updated_at: str
+    counters: dict[str, int] = Field(default_factory=dict)
+
+
+class RuntimeMetricsResetView(RuntimeMetricsView):
+    """Runtime metrics reset acknowledgement."""
+
+    previous_counters: dict[str, int] = Field(default_factory=dict)
+
+
 class StaleLeaseView(BaseModel):
     """Operator-visible stale lease candidate."""
 
