@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -7,13 +8,17 @@ import pytest
 from libs.services.config import ConfigLoader
 
 
-def test_load_without_file_returns_platform_defaults(tmp_path: Path) -> None:
+def test_load_without_file_returns_home_defaults(tmp_path: Path) -> None:
     loader = ConfigLoader(app_name="xqueue-test", app_author="xqueue-test")
+    xqueue_home = Path(os.environ["XQUEUE_HOME"])
 
     config = loader.load(config_path=tmp_path / "missing.yaml")
 
     assert config.paths.config_file == tmp_path / "missing.yaml"
-    assert config.paths.database_path.name == "xqueue.db"
+    assert config.paths.state_root == xqueue_home
+    assert config.paths.runtime_root == xqueue_home / "run"
+    assert config.paths.log_root == xqueue_home / "logs"
+    assert config.paths.database_path == xqueue_home / "xqueue.db"
     assert config.queue.default_queue == "default"
     assert config.worker.poll_interval_seconds == 1.0
     assert config.worker.retry_delay_seconds == 5

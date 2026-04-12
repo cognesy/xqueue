@@ -23,7 +23,7 @@ The initial implementation should use:
 - PyYAML for YAML configuration parsing
 - SQLAlchemy for database access
 - Alembic for schema migrations
-- `platformdirs` for default config, state, runtime, and log paths
+- `~/.xqueue/` for default config, state, runtime, and log paths (`XQUEUE_HOME` to override)
 - structlog for structured application logging
 - pytest for automated testing
 

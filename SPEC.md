@@ -20,7 +20,7 @@ The initial implementation should use:
 - PyYAML for YAML configuration parsing
 - SQLAlchemy for database access
 - Alembic for schema migrations
-- `platformdirs` for default config, state, runtime, and log paths
+- `~/.xqueue/` for default config, state, runtime, and log paths (`XQUEUE_HOME` to override)
 - structlog for structured application logging
 - pytest for automated testing
 
@@ -246,7 +246,7 @@ The implementation should respect the following constraints from the start:
 - SQLite access must use explicit transaction boundaries
 - SQLite must use a sensible `busy_timeout`
 - Alembic must be used for schema migrations from day one
-- `platformdirs` must determine default config, state, runtime, and log paths
+- `~/.xqueue/` must be the default home for config, state, runtime, and log paths
 - Rich must only be used for `--output text`
 - `--output json` must never depend on Rich formatting
 - YAML must only be used for configuration, never for mutable queue state
@@ -411,7 +411,7 @@ platform service integration.
 
 ## Filesystem Layout
 
-Default paths should be determined via `platformdirs`.
+Default paths resolve under `~/.xqueue/` (overridable via `XQUEUE_HOME`).
 
 At minimum, the system should have stable locations for:
 

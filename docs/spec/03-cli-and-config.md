@@ -158,7 +158,7 @@ platform service integration.
 
 ## Filesystem Layout
 
-Default paths should be determined via `platformdirs`.
+Default paths resolve under `~/.xqueue/` (overridable via `XQUEUE_HOME`).
 
 At minimum, the system should have stable locations for:
 

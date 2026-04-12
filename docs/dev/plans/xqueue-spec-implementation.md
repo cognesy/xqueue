@@ -204,7 +204,7 @@ service-manager work.
    directories.
 2. Define architecture guidance and shared conventions for layering, output
    contracts, runtime paths, and instance data ownership.
-3. Implement configuration loading and path resolution using `platformdirs`.
+3. Implement configuration loading and path resolution using `~/.xqueue/`.
 4. Implement SQLite engine/session setup with WAL, `busy_timeout`, and explicit
    transaction helpers.
 5. Add SQLAlchemy persistence models and initial Alembic migration for `jobs`,
@@ -252,7 +252,7 @@ service-manager work.
 - Whether queue pause state should live in a dedicated table from the start or
   be represented through queue metadata derived from jobs plus static config.
 - Whether controller and worker runtime wrappers should be generated in
-  `instance/` or a platformdirs-managed runtime directory outside the repo when
+  `instance/` or the `~/.xqueue/` runtime directory outside the repo when
   running normally.
 - Whether to add explicit `timed_out` as an attempt outcome only in v1 while
   keeping top-level job states limited to the required baseline.

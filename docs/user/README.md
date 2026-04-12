@@ -34,7 +34,7 @@ uv run xq --help
 
 The console script entrypoint is `xq`. During local development, most examples
 in this guide use `--workspace-instance` so state stays under the repository
-`instance/` directory instead of platformdirs-managed user paths.
+`instance/` directory instead of the default `~/.xqueue/` user paths.
 
 To inspect the resolved paths:
 

@@ -10,7 +10,7 @@ In repository-local development mode, the important paths are:
 - `instance/logs/`
 - `instance/config.yaml`
 
-In normal installed usage, the same paths resolve through `platformdirs`. Use
+In normal installed usage, the same paths resolve under `~/.xqueue/`. Use
 `xq -o json config show` to confirm the effective locations on a machine.
 
 The delivery model is at-least-once. A job can be retried after worker failure

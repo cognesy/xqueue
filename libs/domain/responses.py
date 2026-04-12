@@ -105,6 +105,7 @@ class HomeWorkerRow(BaseModel):
     state: WorkerState
     queues: list[str] = Field(default_factory=list)
     heartbeat_at: str | None = None
+    current_command: str | None = None
 
 
 class HomeResponse(PayloadConvertible):

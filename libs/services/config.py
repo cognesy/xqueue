@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
 import yaml
-from platformdirs import PlatformDirs
 
 from libs.domain.config import EffectiveConfig, RuntimePaths, StaticConfig
 
@@ -42,14 +42,14 @@ class ConfigLoader:
                 database_path=instance_root / "xqueue.db",
             )
 
-        dirs = PlatformDirs(appname=self._app_name, appauthor=self._app_author, roaming=False)
-        state_root = Path(dirs.user_state_path)
+        configured_home = os.environ.get("XQUEUE_HOME")
+        home = Path(configured_home).expanduser() if configured_home else Path.home() / ".xqueue"
         return RuntimePaths(
-            config_file=config_path or Path(dirs.user_config_path) / "config.yaml",
-            state_root=state_root,
-            runtime_root=Path(dirs.user_runtime_path),
-            log_root=Path(dirs.user_log_path),
-            database_path=state_root / "xqueue.db",
+            config_file=config_path or home / "config.yaml",
+            state_root=home,
+            runtime_root=home / "run",
+            log_root=home / "logs",
+            database_path=home / "xqueue.db",
         )
 
     def load(

@@ -87,7 +87,7 @@ for the current implementation plan.
 - Rich for human-readable text output
 - Pydantic for domain and response models
 - SQLAlchemy and Alembic with SQLite for durable state
-- platformdirs for config, state, runtime, and log paths
+- `~/.xqueue/` for config, state, runtime, and log paths (`XQUEUE_HOME` to override)
 - PyYAML for static configuration
 - structlog for application logs
 - python-toon for compact agent-facing output

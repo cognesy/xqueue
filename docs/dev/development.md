@@ -82,7 +82,7 @@ When adding a new action:
 
 There are two important modes:
 
-- installed usage: paths resolve through `platformdirs`
+- installed usage: paths resolve under `~/.xqueue/` (`XQUEUE_HOME` to override)
 - local development: `--workspace-instance` resolves paths under `instance/`
 
 Inspect the effective paths with:

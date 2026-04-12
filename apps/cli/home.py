@@ -6,9 +6,12 @@ import shutil
 import sys
 from pathlib import Path
 
+from sqlalchemy import select
+
 from libs.domain.models import JobState, WorkerState
 from libs.domain.responses import HomeJobCount, HomeQueueRow, HomeResponse, HomeWorkerRow
 from libs.infra.database import create_session_factory, create_sqlite_engine
+from libs.infra.models import JobModel
 from libs.services.config import ConfigLoader
 from libs.services.database import SessionManager
 from libs.services.queues import QueueService
@@ -56,9 +59,16 @@ def build_home_response(workspace_root: Path) -> HomeResponse:
         with session_manager.session() as session:
             queue_stats = queue_service.list_queue_stats(session)
             workers = worker_service.list_workers(session)
+            running_jobs = session.execute(
+                select(JobModel.worker_id, JobModel.command)
+                .where(JobModel.state == JobState.RUNNING.value)
+                .where(JobModel.worker_id.is_not(None))
+            ).all()
+            worker_commands: dict[str, str] = {row.worker_id: row.command for row in running_jobs}
     except Exception:
         queue_stats = []
         workers = []
+        worker_commands = {}
         help_items.append("Run `xq db check` to inspect the current state store")
 
     job_counts = {
@@ -100,6 +110,7 @@ def build_home_response(workspace_root: Path) -> HomeResponse:
                 state=worker.state,
                 queues=list(worker.queues),
                 heartbeat_at=None if worker.heartbeat_at is None else worker.heartbeat_at.isoformat(),
+                current_command=worker_commands.get(worker.id),
             )
             for worker in workers
             if worker.state is WorkerState.ACTIVE

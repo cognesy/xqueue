@@ -84,9 +84,9 @@ Examples:
 - local stdout/stderr capture during development
 - local runtime files created for manual testing
 
-In normal installed usage, runtime state may resolve to platformdirs-managed
-paths outside the repository. In-repo `instance/` remains the local development
-analogue, not the canonical product source tree.
+In normal installed usage, runtime state resolves under `~/.xqueue/`. In-repo
+`instance/` remains the local development analogue, not the canonical product
+source tree.
 
 ### Documentation
 

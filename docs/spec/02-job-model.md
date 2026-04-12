@@ -155,7 +155,7 @@ The implementation should respect the following constraints from the start:
 - SQLite access must use explicit transaction boundaries
 - SQLite must use a sensible `busy_timeout`
 - Alembic must be used for schema migrations from day one
-- `platformdirs` must determine default config, state, runtime, and log paths
+- `~/.xqueue/` must be the default home for config, state, runtime, and log paths
 - Rich must only be used for `--output text`
 - `--output json`, `--output jsonl`, and `--output toon` must never depend on
   Rich formatting
