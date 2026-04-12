@@ -9,7 +9,7 @@ from typer.testing import CliRunner
 
 from apps.cli.main import app
 from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.infra.models import Base, JobModel, WorkerModel
+from libs.infra.models import AttemptModel, Base, JobModel, WorkerModel
 from libs.services.database import SessionManager
 
 
@@ -59,6 +59,63 @@ def _seed_basic(instance_root: Path) -> None:
                     attempt_count=1,
                 ),
             ]
+        )
+    engine.dispose()
+
+
+def _seed_running_job_with_logs(instance_root: Path, *, write_logs: bool) -> None:
+    database_path = instance_root / "xqueue.db"
+    engine = create_sqlite_engine(database_path)
+    Base.metadata.create_all(engine)
+    session_factory = create_session_factory(engine)
+    now = datetime(2026, 3, 22, 20, 30, tzinfo=UTC)
+    log_root = instance_root / "logs"
+    log_root.mkdir(parents=True, exist_ok=True)
+    stdout_path = log_root / "job-running.stdout.log"
+    stderr_path = log_root / "job-running.stderr.log"
+    if write_logs:
+        stdout_path.write_text("hello\n", encoding="utf-8")
+        stderr_path.write_text("warning\n", encoding="utf-8")
+    else:
+        stdout_path.write_text("", encoding="utf-8")
+        stderr_path.write_text("", encoding="utf-8")
+
+    with SessionManager(session_factory).transaction() as session:
+        session.add(
+            WorkerModel(
+                id="worker-1",
+                state="active",
+                queues=["agent"],
+                heartbeat_at=now,
+                started_at=now,
+                process_id=12345,
+                concurrency=1,
+            )
+        )
+        session.add(
+            JobModel(
+                id="job-running",
+                queue="agent",
+                command="sleep 30",
+                shell=True,
+                priority=10,
+                created_at=now,
+                available_at=now,
+                state="running",
+                worker_id="worker-1",
+                attempt_count=1,
+            )
+        )
+        session.add(
+            AttemptModel(
+                job_id="job-running",
+                attempt_number=1,
+                worker_id="worker-1",
+                state="running",
+                started_at=now,
+                stdout_path=str(stdout_path),
+                stderr_path=str(stderr_path),
+            )
         )
     engine.dispose()
 
@@ -129,3 +186,34 @@ def test_controller_status_tmux_output(tmp_path: Path) -> None:
         assert result.exit_code == 0
         output = result.stdout.strip()
         assert "controller_id=" in output
+
+
+def test_jobs_pane_tmux_output_for_silent_running_job(tmp_path: Path) -> None:
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        instance = Path("instance")
+        instance.mkdir(exist_ok=True)
+        _seed_running_job_with_logs(instance, write_logs=False)
+
+        result = runner.invoke(app, ["jobs", "pane", "job-running", "--output", "tmux", "--workspace-instance"])
+
+        assert result.exit_code == 0
+        output = result.stdout.strip()
+        assert "id=job-running" in output
+        assert "state=running" in output
+        assert "output_status=no output yet" in output
+        assert "size_bytes=0" in output
+        assert "modified_at=" in output
+
+
+def test_jobs_pane_tmux_output_for_running_job_with_logs(tmp_path: Path) -> None:
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        instance = Path("instance")
+        instance.mkdir(exist_ok=True)
+        _seed_running_job_with_logs(instance, write_logs=True)
+
+        result = runner.invoke(app, ["jobs", "pane", "job-running", "--output", "tmux", "--workspace-instance"])
+
+        assert result.exit_code == 0
+        output = result.stdout.strip()
+        assert "id=job-running" in output
+        assert "output_status=stdout=6B stderr=8B" in output

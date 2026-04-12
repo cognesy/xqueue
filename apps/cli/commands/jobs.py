@@ -11,6 +11,7 @@ from apps.cli.runtime import run_action
 from libs.actions.jobs import (
     CancelJobAction,
     DeleteJobAction,
+    JobPaneAction,
     ListJobsAction,
     PruneJobsAction,
     PurgeJobsAction,
@@ -92,6 +93,23 @@ def show_job(
     """Show the detailed state for a single job."""
     action = ShowJobAction(_build_session_manager(use_workspace_instance), JobService())
     run_action(lambda: action(job_id), out=Output(ctx, "jobs.show", output))
+
+
+@app.command("pane")
+def job_pane(
+    ctx: typer.Context,
+    job_id: str = typer.Argument(..., metavar="JOB_ID"),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
+    use_workspace_instance: bool = typer.Option(
+        False,
+        "--workspace-instance",
+        help="Resolve runtime paths relative to the repository instance directory.",
+        hidden=True,
+    ),
+) -> None:
+    """Show concise job liveness for monitor panes."""
+    action = JobPaneAction(_build_session_manager(use_workspace_instance), JobService())
+    run_action(lambda: action(job_id), out=Output(ctx, "jobs.pane", output))
 
 
 @app.command("cancel")

@@ -245,6 +245,35 @@ class JobLogTailView(BaseModel):
     truncated: bool = False
 
 
+class JobLogLivenessView(BaseModel):
+    """Filesystem liveness for one attempt log stream."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    path: str | None = None
+    size_bytes: int | None = None
+    modified_at: datetime | None = None
+
+
+class JobPaneView(BaseModel):
+    """Concise monitor-pane view of one job."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    id: str
+    queue: str
+    state: JobState
+    command: str
+    worker_id: str | None = None
+    attempt_number: int | None = None
+    started_at: datetime | None = None
+    elapsed_seconds: int | None = None
+    process_status: str = "unknown"
+    output_status: str
+    stdout: JobLogLivenessView
+    stderr: JobLogLivenessView
+
+
 class StaleLeaseView(BaseModel):
     """Operator-visible stale lease candidate."""
 

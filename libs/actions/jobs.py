@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import UTC, datetime
+from pathlib import Path
 from uuid import uuid4
 
 from libs.actions.logging import log_action
-from libs.domain.models import AttemptLogStream, EnqueueJobInput, JobListFilters
+from libs.domain.models import AttemptLogStream, EnqueueJobInput, JobListFilters, JobLogLivenessView, JobPaneView, JobState
 from libs.domain.responses import DetailResponse, ListResponse, MutationResponse
 from libs.services.database import SessionManager
 from libs.services.job_logs import JobLogService
@@ -110,6 +111,75 @@ class ShowJobAction:
         with self._session_manager.session() as session:
             item = self._job_service.get_job(session, job_id=job_id)
         return DetailResponse(item=item)
+
+
+class JobPaneAction:
+    """Return a concise monitor-pane view of one job."""
+
+    def __init__(
+        self,
+        session_manager: SessionManager,
+        job_service: JobService,
+        *,
+        clock: Callable[[], datetime] = utc_now,
+    ) -> None:
+        self._session_manager = session_manager
+        self._job_service = job_service
+        self._clock = clock
+
+    @log_action(
+        "job_pane",
+        context_getter=lambda self, job_id: {"job_id": job_id},
+        result_getter=lambda result: {"job_id": result.item.id, "job_state": result.item.state.value},
+    )
+    def __call__(self, job_id: str) -> DetailResponse:
+        with self._session_manager.session() as session:
+            job = self._job_service.get_job(session, job_id=job_id)
+
+        attempt = job.attempts[-1] if job.attempts else None
+        stdout = self._log_liveness(None if attempt is None else attempt.stdout_path)
+        stderr = self._log_liveness(None if attempt is None else attempt.stderr_path)
+        item = JobPaneView(
+            id=job.id,
+            queue=job.queue,
+            state=job.state,
+            command=job.command,
+            worker_id=job.worker_id,
+            attempt_number=None if attempt is None else attempt.attempt_number,
+            started_at=None if attempt is None else attempt.started_at,
+            elapsed_seconds=self._elapsed_seconds(None if attempt is None else attempt.started_at, None if attempt is None else attempt.finished_at),
+            process_status="unknown" if job.state is JobState.RUNNING else "not_running",
+            output_status=self._output_status(stdout, stderr),
+            stdout=stdout,
+            stderr=stderr,
+        )
+        return DetailResponse(item=item)
+
+    def _log_liveness(self, path: str | None) -> JobLogLivenessView:
+        if path is None:
+            return JobLogLivenessView()
+        log_path = Path(path)
+        if not log_path.exists():
+            return JobLogLivenessView(path=path)
+        stat = log_path.stat()
+        return JobLogLivenessView(
+            path=path,
+            size_bytes=stat.st_size,
+            modified_at=datetime.fromtimestamp(stat.st_mtime, tz=UTC),
+        )
+
+    def _elapsed_seconds(self, started_at: datetime | None, finished_at: datetime | None) -> int | None:
+        if started_at is None:
+            return None
+        end = finished_at or self._clock()
+        return max(0, int((end - started_at).total_seconds()))
+
+    def _output_status(self, stdout: JobLogLivenessView, stderr: JobLogLivenessView) -> str:
+        stdout_size = stdout.size_bytes or 0
+        stderr_size = stderr.size_bytes or 0
+        if stdout_size or stderr_size:
+            return f"stdout={stdout_size}B stderr={stderr_size}B"
+        return "no output yet"
 
 
 class CancelJobAction:
