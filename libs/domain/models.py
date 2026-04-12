@@ -350,6 +350,36 @@ class RetentionCleanupResult(BaseModel):
     deleted_log_paths: list[str] = Field(default_factory=list)
 
 
+class JobPruneResult(BaseModel):
+    """Summary of a job pruning operation."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    dry_run: bool = True
+    state_filter: str | None = None
+    older_than: str | None = None
+    cutoff_at: datetime | None = None
+    matched_job_count: int = 0
+    deleted_job_count: int = 0
+    deleted_attempt_count: int = 0
+    deleted_event_count: int = 0
+    deleted_log_count: int = 0
+    deleted_log_paths: list[str] = Field(default_factory=list)
+    matched_jobs: list["JobPruneSummary"] = Field(default_factory=list)
+
+
+class JobPruneSummary(BaseModel):
+    """One job matched by a prune operation."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    id: str
+    queue: str
+    state: JobState
+    attempt_count: int = 0
+    created_at: datetime
+
+
 class WorkspaceInstanceResetResult(BaseModel):
     """Summary of a repo-local instance reset run."""
 

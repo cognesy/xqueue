@@ -12,6 +12,7 @@ from libs.actions.jobs import (
     CancelJobAction,
     DeleteJobAction,
     ListJobsAction,
+    PruneJobsAction,
     PurgeJobsAction,
     RetryJobAction,
     ShowJobAction,
@@ -23,6 +24,7 @@ from libs.services.config import ConfigLoader
 from libs.services.database import SessionManager
 from libs.services.job_logs import JobLogService
 from libs.services.jobs import JobService
+from libs.services.pruning import JobPruningService
 from libs.services.queues import QueueService
 
 
@@ -194,3 +196,35 @@ def purge_jobs(
     """Delete queued or retry-scheduled jobs for a queue."""
     action = PurgeJobsAction(_build_session_manager(use_workspace_instance), QueueService())
     run_action(lambda: action(queue), out=Output(ctx, "jobs.purge", output))
+
+
+@app.command("prune")
+def prune_jobs(
+    ctx: typer.Context,
+    state: str | None = typer.Option(None, "--state", help="Job state to prune (e.g. failed, succeeded, canceled, terminal)."),
+    older_than: str | None = typer.Option(None, "--older-than", help="Duration threshold, e.g. 24h, 7d, 30m."),
+    logs: bool = typer.Option(False, "--logs", help="Also delete associated attempt log files."),
+    apply: bool = typer.Option(False, "--apply", help="Execute the prune. Without this flag, runs as dry-run."),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
+    use_workspace_instance: bool = typer.Option(
+        False,
+        "--workspace-instance",
+        help="Resolve runtime paths relative to the repository instance directory.",
+        hidden=True,
+    ),
+) -> None:
+    """Prune terminal job history. Dry-run by default; pass --apply to execute."""
+    action = PruneJobsAction(
+        _build_session_manager(use_workspace_instance),
+        JobPruningService(),
+        JobLogService(),
+    )
+    run_action(
+        lambda: action(
+            state=state,
+            older_than=older_than,
+            prune_logs=logs,
+            dry_run=not apply,
+        ),
+        out=Output(ctx, "jobs.prune", output),
+    )

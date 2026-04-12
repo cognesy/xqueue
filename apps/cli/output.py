@@ -15,6 +15,7 @@ from rich.pretty import Pretty
 
 from libs.services.axi_contracts import get_command_contract, parse_fields_csv, validate_requested_fields
 from libs.domain.responses import ErrorDetail, ErrorResponse, PayloadConvertible
+from libs.services.tmux_renderer import render_tmux
 from libs.services.toon_renderer import render_toon
 
 
@@ -23,6 +24,7 @@ class OutputFormat(StrEnum):
     JSONL = "jsonl"
     TEXT = "text"
     JSON = "json"
+    TMUX = "tmux"
 
 
 def to_jsonable(value: Any) -> Any:
@@ -238,6 +240,8 @@ class Output:
 
         if self._fmt is OutputFormat.TOON:
             return render_toon(_select_payload(payload, contract=self._contract, requested=self._requested_fields))
+        if self._fmt is OutputFormat.TMUX:
+            return render_tmux(_select_payload(payload, contract=self._contract, requested=self._requested_fields))
         if self._fmt is OutputFormat.JSON:
             selected = payload if not self._requested_fields else _select_payload(
                 payload,

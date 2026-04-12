@@ -12,6 +12,7 @@ from libs.domain.responses import DetailResponse, ListResponse, MutationResponse
 from libs.services.database import SessionManager
 from libs.services.job_logs import JobLogService
 from libs.services.jobs import JobService
+from libs.services.pruning import JobPruningService
 from libs.services.queues import QueueService
 
 
@@ -245,6 +246,90 @@ class TailJobLogsAction:
             tailed_lines, truncated = self._job_log_service.tail(path=detail.path, lines=lines)
             detail = detail.model_copy(update={"lines": tailed_lines, "truncated": truncated})
         return DetailResponse(item=detail)
+
+
+class PruneJobsAction:
+    """Prune terminal jobs and their associated history with dry-run support."""
+
+    def __init__(
+        self,
+        session_manager: SessionManager,
+        pruning_service: JobPruningService,
+        job_log_service: JobLogService | None = None,
+        *,
+        clock: Callable[[], datetime] = utc_now,
+    ) -> None:
+        self._session_manager = session_manager
+        self._pruning_service = pruning_service
+        self._job_log_service = job_log_service or JobLogService()
+        self._clock = clock
+
+    @log_action(
+        "prune_jobs",
+        context_getter=lambda self, *, state, older_than, prune_logs, dry_run: {
+            "state": state,
+            "older_than": older_than,
+            "prune_logs": prune_logs,
+            "dry_run": dry_run,
+        },
+        result_getter=lambda result: {
+            "dry_run": result.item.dry_run,
+            "matched_job_count": result.item.matched_job_count,
+            "deleted_job_count": result.item.deleted_job_count,
+        },
+    )
+    def __call__(
+        self,
+        *,
+        state: str | None,
+        older_than: str | None,
+        prune_logs: bool,
+        dry_run: bool,
+    ) -> MutationResponse:
+        cutoff_at = self._parse_older_than(older_than) if older_than else None
+
+        with self._session_manager.transaction() as session:
+            result = self._pruning_service.prune(
+                session,
+                state_filter=state,
+                cutoff_at=cutoff_at,
+                prune_logs=prune_logs,
+                dry_run=dry_run,
+            )
+
+        if not dry_run and prune_logs and result.deleted_log_paths:
+            deleted_paths = self._job_log_service.delete_paths(paths=result.deleted_log_paths)
+            result = result.model_copy(
+                update={
+                    "deleted_log_paths": deleted_paths,
+                    "deleted_log_count": len(deleted_paths),
+                }
+            )
+
+        return MutationResponse(
+            item=result.model_copy(update={"older_than": older_than}),
+        )
+
+    def _parse_older_than(self, value: str) -> datetime:
+        """Parse a duration string like '24h', '7d', '30m' into a cutoff datetime."""
+        from datetime import timedelta
+
+        unit = value[-1].lower()
+        try:
+            amount = int(value[:-1])
+        except ValueError:
+            raise ValueError(f"invalid duration: {value!r}; expected format like '24h', '7d', '30m'") from None
+
+        if unit == "m":
+            delta = timedelta(minutes=amount)
+        elif unit == "h":
+            delta = timedelta(hours=amount)
+        elif unit == "d":
+            delta = timedelta(days=amount)
+        else:
+            raise ValueError(f"unsupported duration unit: {unit!r}; use 'm' (minutes), 'h' (hours), or 'd' (days)")
+
+        return self._clock() - delta
 
 
 class PurgeJobsAction:

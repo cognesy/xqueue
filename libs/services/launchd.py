@@ -12,6 +12,8 @@ from typing import Callable
 from libs.domain.models import ManagedControllerInstallView, ManagedControllerStatusView, ServiceManagerKind
 from libs.services.cli_bootstrap import xqueue_python_command
 
+SERVICE_LOG_KEYS = ("StandardOutPath", "StandardErrorPath")
+
 
 @dataclass(frozen=True)
 class CommandResult:
@@ -93,6 +95,7 @@ class LaunchdService:
                 use_workspace_instance=use_workspace_instance,
             )
         )
+        self._rotate_existing_service_logs(controller_id)
         self._runner(["launchctl", "bootstrap", self._domain_target(), str(artifact_path)])
         self._runner(["launchctl", "enable", f"{self._domain_target()}/{self.service_name(controller_id)}"])
         return ManagedControllerInstallView(
@@ -118,6 +121,7 @@ class LaunchdService:
 
     def start(self, *, controller_id: str) -> ManagedControllerInstallView:
         artifact_path = self.artifact_path(controller_id)
+        self._rotate_existing_service_logs(controller_id)
         self._runner(["launchctl", "bootstrap", self._domain_target(), str(artifact_path)])
         self._runner(["launchctl", "enable", f"{self._domain_target()}/{self.service_name(controller_id)}"])
         self._runner(["launchctl", "kickstart", "-k", f"{self._domain_target()}/{self.service_name(controller_id)}"])
@@ -128,6 +132,7 @@ class LaunchdService:
         return self._mutation(controller_id=controller_id, action="stop")
 
     def restart(self, *, controller_id: str) -> ManagedControllerInstallView:
+        self._rotate_existing_service_logs(controller_id)
         self._runner(["launchctl", "kickstart", "-k", f"{self._domain_target()}/{self.service_name(controller_id)}"])
         return self._mutation(controller_id=controller_id, action="restart")
 
@@ -163,6 +168,34 @@ class LaunchdService:
             artifact_path=str(artifact_path),
             action=action,
         )
+
+    def _rotate_existing_service_logs(self, controller_id: str) -> None:
+        for path in self._service_log_paths(controller_id):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            if not path.exists() or path.stat().st_size == 0:
+                continue
+
+            path.replace(self._next_rotated_log_path(path))
+
+    def _service_log_paths(self, controller_id: str) -> list[Path]:
+        artifact_path = self.artifact_path(controller_id)
+        if not artifact_path.exists():
+            return []
+
+        payload = plistlib.loads(artifact_path.read_bytes())
+        return [Path(payload[key]) for key in SERVICE_LOG_KEYS if isinstance(payload.get(key), str)]
+
+    def _next_rotated_log_path(self, path: Path) -> Path:
+        rotated_path = path.with_name(f"{path.name}.previous")
+        if not rotated_path.exists():
+            return rotated_path
+
+        index = 1
+        while True:
+            candidate = path.with_name(f"{path.name}.previous.{index}")
+            if not candidate.exists():
+                return candidate
+            index += 1
 
     def _run(self, command: list[str]) -> CommandResult:
         completed = subprocess.run(command, capture_output=True, text=True, check=False)
