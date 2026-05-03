@@ -279,6 +279,10 @@ Do not use this casually on a system with data you want to keep.
 3. `xq -o json health`
 4. if lease is stale: `xq -o json recover stale-leases`
 
+In `jobs show`, inspect the latest attempt `event_log_path` first for concise
+JSONL lifecycle timing and correlation. Use `stdout_path` and `stderr_path` only
+when you need the raw command streams or agent transcript.
+
 ### Worker looks alive but nothing is moving
 
 1. check queue pause state: `xq -o json queues stats`

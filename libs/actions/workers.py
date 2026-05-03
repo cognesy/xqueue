@@ -10,13 +10,14 @@ from time import sleep
 
 from libs.actions.logging import log_action
 from libs.domain.errors import RuntimeExecutionError
-from libs.domain.models import AttemptLogPaths, RegisterWorkerInput, ShellExecutionRequest, WorkerPollResult, WorkerState
+from libs.domain.models import AttemptLogPaths, JobState, RegisterWorkerInput, ShellExecutionRequest, WorkerPollResult, WorkerState
 from libs.domain.responses import DetailResponse, ListResponse, MutationResponse
 from libs.services.attempts import AttemptService
 from libs.services.database import SessionManager
 from libs.services.execution import CommandExecutionService
 from libs.services.jobs import JobService
 from libs.services.metrics import MetricsService
+from libs.services.operation_logs import JobOperationLogService
 from libs.services.workers import WorkerService
 
 
@@ -160,6 +161,7 @@ class RunWorkerAction:
         retry_delay_seconds: int = 5,
         clock: Callable[[], datetime] = utc_now,
         metrics: MetricsService | None = None,
+        operation_logs: JobOperationLogService | None = None,
     ) -> None:
         self._session_manager = session_manager
         self._worker_service = worker_service
@@ -172,6 +174,7 @@ class RunWorkerAction:
         self._retry_delay_seconds = retry_delay_seconds
         self._clock = clock
         self._metrics = metrics or MetricsService()
+        self._operation_logs = operation_logs or JobOperationLogService()
 
     @log_action(
         "run_worker",
@@ -252,6 +255,21 @@ class RunWorkerAction:
             job_id=job_id,
             attempt_number=job.attempt_count + 1,
         )
+        correlation = self._operation_logs.correlation_from_env(job.env)
+        self._operation_logs.append(
+            path=log_paths.event_log_path,
+            event="job.claimed",
+            job_id=job.id,
+            queue=job.queue,
+            worker_id=worker_id,
+            attempt_number=job.attempt_count + 1,
+            command=job.command,
+            cwd=job.cwd,
+            stdout_path=log_paths.stdout_path,
+            stderr_path=log_paths.stderr_path,
+            correlation=correlation,
+            timestamp=now,
+        )
 
         with self._session_manager.transaction() as session:
             started_attempt = self._attempt_service.start_attempt(
@@ -261,9 +279,25 @@ class RunWorkerAction:
                 log_paths=AttemptLogPaths(
                     stdout_path=log_paths.stdout_path,
                     stderr_path=log_paths.stderr_path,
+                    event_log_path=log_paths.event_log_path,
                 ),
                 now=now,
             )
+        self._operation_logs.append(
+            path=log_paths.event_log_path,
+            event="job.started",
+            job_id=job.id,
+            queue=job.queue,
+            worker_id=worker_id,
+            attempt_id=started_attempt.id,
+            attempt_number=started_attempt.attempt_number,
+            command=job.command,
+            cwd=job.cwd,
+            stdout_path=started_attempt.stdout_path,
+            stderr_path=started_attempt.stderr_path,
+            correlation=correlation,
+            timestamp=started_attempt.started_at,
+        )
 
         result = self._execution_service.run(
             request=ShellExecutionRequest(
@@ -285,12 +319,68 @@ class RunWorkerAction:
         )
 
         with self._session_manager.transaction() as session:
-            return self._attempt_service.finalize_attempt(
+            finalized_job = self._attempt_service.finalize_attempt(
                 session,
                 attempt_id=started_attempt.id,
                 result=result,
                 retry_delay_seconds=self._retry_delay_seconds,
             )
+        duration_seconds = (result.finished_at - result.started_at).total_seconds()
+        outcome = self._operation_outcome(result=result, job_state=finalized_job.state.value)
+        self._operation_logs.append(
+            path=log_paths.event_log_path,
+            event="job.finished",
+            job_id=job.id,
+            queue=job.queue,
+            worker_id=worker_id,
+            attempt_id=started_attempt.id,
+            attempt_number=started_attempt.attempt_number,
+            command=job.command,
+            cwd=job.cwd,
+            pid=result.process_id,
+            exit_code=result.exit_code,
+            outcome=outcome,
+            duration_seconds=duration_seconds,
+            stdout_path=result.stdout_path,
+            stderr_path=result.stderr_path,
+            correlation=correlation,
+            timestamp=result.finished_at,
+        )
+        self._operation_logs.append(
+            path=log_paths.event_log_path,
+            event=self._terminal_event(result=result, job_state=finalized_job.state.value),
+            job_id=job.id,
+            queue=job.queue,
+            worker_id=worker_id,
+            attempt_id=started_attempt.id,
+            attempt_number=started_attempt.attempt_number,
+            command=job.command,
+            cwd=job.cwd,
+            pid=result.process_id,
+            exit_code=result.exit_code,
+            outcome=outcome,
+            duration_seconds=duration_seconds,
+            stdout_path=result.stdout_path,
+            stderr_path=result.stderr_path,
+            correlation=correlation,
+            timestamp=result.finished_at,
+        )
+        return finalized_job
+
+    def _operation_outcome(self, *, result, job_state: str) -> str:
+        if result.canceled:
+            return "canceled"
+        if result.timed_out:
+            return "retry_scheduled" if job_state == JobState.RETRY_SCHEDULED.value else "timed_out"
+        if result.exit_code == 0:
+            return "succeeded"
+        return "retry_scheduled" if job_state == JobState.RETRY_SCHEDULED.value else "failed"
+
+    def _terminal_event(self, *, result, job_state: str) -> str:
+        outcome = self._operation_outcome(result=result, job_state=job_state)
+        if outcome == "retry_scheduled":
+            return "job.retry_scheduled"
+        return f"job.{outcome}"
 
     def _is_cancel_requested(self, job_id: str) -> bool:
         with self._session_manager.session() as session:

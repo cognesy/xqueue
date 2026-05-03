@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import threading
 import time
 from datetime import UTC, datetime, timedelta
@@ -56,6 +57,11 @@ def test_run_worker_action_executes_successful_job_and_records_attempt(tmp_path:
                 queue="agent",
                 command="printf 'success\\n'",
                 shell=True,
+                env={
+                    "XPM_DISPATCH_RUN_ID": "dispatch-123",
+                    "XPM_DEDUPE_KEY": "candidate-123",
+                    "IGNORED_SECRET": "do-not-log",
+                },
                 priority=10,
                 created_at=now,
                 available_at=now,
@@ -94,6 +100,25 @@ def test_run_worker_action_executes_successful_job_and_records_attempt(tmp_path:
     assert attempt_row.exit_code == 0
     assert Path(attempt_row.stdout_path).read_text() == "success\n"
     assert Path(attempt_row.stderr_path).read_text() == ""
+
+    operation_log_path = Path(result.item.claimed_job.attempts[0].event_log_path or "")
+    operation_events = [json.loads(line) for line in operation_log_path.read_text().splitlines()]
+    assert [item["event"] for item in operation_events] == [
+        "job.claimed",
+        "job.started",
+        "job.finished",
+        "job.succeeded",
+    ]
+    assert all(item["timestamp"].endswith("Z") for item in operation_events)
+    assert operation_events[-1]["outcome"] == "succeeded"
+    assert operation_events[-1]["exit_code"] == 0
+    assert operation_events[-1]["stdout_path"] == attempt_row.stdout_path
+    assert operation_events[-1]["stderr_path"] == attempt_row.stderr_path
+    assert operation_events[-1]["correlation"] == {
+        "xpm_dedupe_key": "candidate-123",
+        "xpm_dispatch_run_id": "dispatch-123",
+    }
+    assert "do-not-log" not in operation_log_path.read_text()
 
     with engine.connect() as connection:
         event_types = connection.execute(
@@ -147,6 +172,10 @@ def test_run_worker_action_schedules_retry_then_succeeds_on_second_attempt(tmp_p
     assert len(first_result.item.claimed_job.attempts) == 1
     assert first_result.item.claimed_job.attempts[0].state.value == "failed"
     assert first_result.item.claimed_job.available_at is not None
+    first_operation_log = Path(first_result.item.claimed_job.attempts[0].event_log_path or "")
+    first_operation_events = [json.loads(line) for line in first_operation_log.read_text().splitlines()]
+    assert first_operation_events[-1]["event"] == "job.retry_scheduled"
+    assert first_operation_events[-1]["outcome"] == "retry_scheduled"
 
     second_action = _build_action(
         session_factory=session_factory,

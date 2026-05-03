@@ -171,12 +171,22 @@ Show full detail:
 uv run xq -o json jobs show <job-id>
 ```
 
+Use the latest attempt paths from `jobs show`:
+
+- `stdout_path` is raw command stdout
+- `stderr_path` is raw command stderr
+- `event_log_path` is JSONL job lifecycle telemetry
+
 Tail attempt logs:
 
 ```sh
 uv run xq -o json jobs tail <job-id>
 uv run xq jobs tail <job-id> --stream stdout --attempt-number 1 --lines 50
 ```
+
+For operational timing and correlation, read `event_log_path` directly. It
+contains timestamped `job.claimed`, `job.started`, `job.finished`, and terminal
+outcome events without embedding raw agent transcripts.
 
 Control jobs:
 

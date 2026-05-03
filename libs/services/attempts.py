@@ -60,6 +60,7 @@ class AttemptService:
             started_at=attempt.started_at,
             stdout_path=attempt.stdout_path or "",
             stderr_path=attempt.stderr_path or "",
+            event_log_path=log_paths.event_log_path,
         )
 
     def finalize_attempt(

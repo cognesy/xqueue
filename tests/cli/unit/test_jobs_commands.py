@@ -239,6 +239,7 @@ def test_jobs_show_returns_json_detail_response(tmp_path: Path) -> None:
         assert list(payload.keys()) == ["item"]
         assert payload["item"]["id"] == "job-failed"
         assert payload["item"]["attempts"][0]["stderr_path"].endswith("job-failed.stderr.log")
+        assert payload["item"]["attempts"][0]["event_log_path"].endswith("attempt-0001.events.jsonl")
 
 
 def test_jobs_show_returns_structured_not_found_error(tmp_path: Path) -> None:

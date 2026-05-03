@@ -90,6 +90,7 @@ class AttemptView(BaseModel):
     cancellation_reason: str | None = None
     stdout_path: str | None = None
     stderr_path: str | None = None
+    event_log_path: str | None = None
 
 
 class AttemptLogPaths(BaseModel):
@@ -99,6 +100,7 @@ class AttemptLogPaths(BaseModel):
 
     stdout_path: str
     stderr_path: str
+    event_log_path: str
 
 
 class ShellExecutionRequest(BaseModel):
@@ -141,6 +143,7 @@ class StartedAttempt(BaseModel):
     started_at: datetime
     stdout_path: str
     stderr_path: str
+    event_log_path: str
 
 
 class JobSummary(BaseModel):

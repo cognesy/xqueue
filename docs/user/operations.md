@@ -29,6 +29,8 @@ Rules:
 
 - `stdout` is the structured API payload
 - application logs use `structlog` and are emitted as JSON on `stderr`.
+- raw command stdout/stderr stay in per-attempt log files.
+- concise job lifecycle events are written as JSONL beside those raw logs.
 - Rich is only used for `-o text`
 
 For automation, consume `stdout` as the API payload and treat `stderr` as
@@ -113,7 +115,16 @@ Useful options:
 - `--retry-delay-seconds`
 
 Attempt logs are stored under `logs/jobs/<job-id>/` for the resolved runtime
-root.
+root. Each attempt writes:
+
+- `attempt-0001.stdout.log` for raw command stdout
+- `attempt-0001.stderr.log` for raw command stderr
+- `attempt-0001.events.jsonl` for operational lifecycle events
+
+The JSONL event stream records claim/start/finish and terminal outcomes with
+timestamps, queue, worker id, attempt id, command/cwd, exit code, duration,
+stdout/stderr paths, and propagated `XPM_*`, `XQUEUE_*`, or `XCRON_*`
+correlation environment values.
 
 Important constraint:
 
@@ -152,7 +163,7 @@ The job detail view is the main inspection surface for:
 - assigned worker
 - timeout and cancellation metadata
 - attempt history
-- log file paths
+- stdout, stderr, and event log file paths
 - recovery events
 
 Tail the latest attempt stderr:

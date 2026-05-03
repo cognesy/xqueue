@@ -51,6 +51,11 @@ uv run xq jobs tail <job-id> --workspace-instance --stream stdout --attempt-numb
 uv run xq --fields id,state jobs list --workspace-instance
 ```
 
+`jobs show` includes per-attempt `stdout_path`, `stderr_path`, and
+`event_log_path`. The event log is JSONL with concise lifecycle events such as
+`job.claimed`, `job.started`, `job.finished`, `job.failed`,
+`job.retry_scheduled`, `job.timed_out`, and `job.canceled`.
+
 Filter and sort:
 
 ```sh
@@ -191,6 +196,7 @@ uv run xq hooks status -o json
 - detail commands: `{ "item": { ... } }`
 - successful mutations: `{ "ok": true, "item": { ... } }`
 - structured logs go to `stderr`
+- per-attempt operation logs go to `logs/jobs/<job-id>/attempt-0001.events.jsonl`
 - TOON is the default stdout format
 
 For more detail, see

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 
 from sqlalchemy import Select, asc, desc, select
 from sqlalchemy.orm import Session, selectinload
@@ -301,6 +302,7 @@ class JobService:
             cancellation_reason=model.cancellation_reason,
             stdout_path=model.stdout_path,
             stderr_path=model.stderr_path,
+            event_log_path=self._attempt_event_log_path(model),
         )
 
     def to_event_view(self, model: EventModel) -> EventView:
@@ -310,3 +312,9 @@ class JobService:
             created_at=ensure_utc(model.created_at),
             payload=model.payload,
         )
+
+    def _attempt_event_log_path(self, model: AttemptModel) -> str | None:
+        for path in (model.stdout_path, model.stderr_path):
+            if path is not None:
+                return str(Path(path).with_name(f"attempt-{model.attempt_number:04d}.events.jsonl"))
+        return None

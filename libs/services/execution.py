@@ -12,6 +12,7 @@ from typing import Callable
 
 from libs.domain.errors import ValidationError
 from libs.domain.models import AttemptLogPaths, ProcessExecutionResult, ShellExecutionRequest
+from libs.services.operation_logs import JobOperationLogService
 
 
 def utc_now() -> datetime:
@@ -22,11 +23,19 @@ def utc_now() -> datetime:
 class CommandExecutionService:
     """Run shell commands in their own process groups and capture output to files."""
 
+    def __init__(self, operation_logs: JobOperationLogService | None = None) -> None:
+        self._operation_logs = operation_logs or JobOperationLogService()
+
     def build_attempt_log_paths(self, *, log_root: Path, job_id: str, attempt_number: int) -> AttemptLogPaths:
         job_root = log_root / "jobs" / job_id
         return AttemptLogPaths(
             stdout_path=str(job_root / f"attempt-{attempt_number:04d}.stdout.log"),
             stderr_path=str(job_root / f"attempt-{attempt_number:04d}.stderr.log"),
+            event_log_path=self._operation_logs.build_attempt_event_log_path(
+                log_root=log_root,
+                job_id=job_id,
+                attempt_number=attempt_number,
+            ),
         )
 
     def run(
