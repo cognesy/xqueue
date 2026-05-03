@@ -161,6 +161,8 @@ Prefer `drain` before `stop` when possible.
 Direct controller mode:
 
 ```sh
+uv run xq controller pools ensure agent --queue agent
+uv run xq -o json controller pools list
 uv run xq controller run --controller-id default
 uv run xq -o json controller status --controller-id default
 uv run xq controller pause-intake --controller-id default
@@ -177,6 +179,9 @@ Semantics:
 - `drain` lets current work finish and then exits workers
 - `restart` reloads config in direct mode before recreating worker pools
 - `stop` requests shutdown
+- `controller pools ensure/remove` mutates only xqueue-owned
+  `controller.pools`; restart the controller after a changed result reports
+  `restart_required`
 
 Important distinction:
 

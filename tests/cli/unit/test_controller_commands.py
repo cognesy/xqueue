@@ -162,3 +162,56 @@ def test_controller_managed_commands_return_json(tmp_path: Path, monkeypatch) ->
         assert json.loads(restart.stdout)["item"]["action"] == "restart"
         assert json.loads(stop.stdout)["item"]["action"] == "stop"
         assert json.loads(uninstall.stdout)["item"]["action"] == "uninstall"
+
+
+def test_controller_pool_commands_mutate_workspace_config_idempotently(tmp_path: Path) -> None:
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        Path("instance").mkdir(exist_ok=True)
+
+        ensure = runner.invoke(
+            app,
+            [
+                "controller",
+                "pools",
+                "ensure",
+                "xpm",
+                "--queue",
+                "xpm",
+                "--output",
+                "json",
+                "--workspace-instance",
+            ],
+        )
+        ensure_again = runner.invoke(
+            app,
+            [
+                "controller",
+                "pools",
+                "ensure",
+                "xpm",
+                "--queue",
+                "xpm",
+                "--output",
+                "json",
+                "--workspace-instance",
+            ],
+        )
+        listed = runner.invoke(app, ["controller", "pools", "list", "--output", "json", "--workspace-instance"])
+        removed = runner.invoke(app, ["controller", "pools", "remove", "xpm", "--output", "json", "--workspace-instance"])
+        removed_again = runner.invoke(app, ["controller", "pools", "remove", "xpm", "--output", "json", "--workspace-instance"])
+
+        assert ensure.exit_code == 0
+        assert ensure_again.exit_code == 0
+        assert listed.exit_code == 0
+        assert removed.exit_code == 0
+        assert removed_again.exit_code == 0
+
+        ensure_payload = json.loads(ensure.stdout)
+        assert ensure_payload["item"]["action"] == "created"
+        assert ensure_payload["item"]["pool"]["queues"] == ["xpm"]
+        assert ensure_payload["item"]["restart_required"] is True
+        assert ensure_payload["item"]["restart_command"] == "xq controller restart"
+        assert json.loads(ensure_again.stdout)["item"]["action"] == "noop"
+        assert json.loads(listed.stdout)["items"][0]["name"] == "xpm"
+        assert json.loads(removed.stdout)["item"]["action"] == "removed"
+        assert json.loads(removed_again.stdout)["item"]["action"] == "noop"

@@ -4,9 +4,27 @@ from datetime import UTC, datetime, timedelta
 from itertools import count
 from pathlib import Path
 
-from libs.actions.controller import RunControllerAction
-from libs.domain.config import ControllerConfig, ControllerPoolConfig, EffectiveConfig, QueueConfig, RestartPolicy, RuntimePaths, WorkerDefaults
+import pytest
+import yaml
+
+from libs.actions.controller import (
+    EnsureControllerPoolAction,
+    ListControllerPoolsAction,
+    RemoveControllerPoolAction,
+    RunControllerAction,
+)
+from libs.domain.config import (
+    ControllerConfig,
+    ControllerPoolConfig,
+    EffectiveConfig,
+    QueueConfig,
+    RestartPolicy,
+    RuntimePaths,
+    WorkerDefaults,
+)
+from libs.domain.errors import ValidationError
 from libs.domain.models import ControllerState
+from libs.services.config import ControllerPoolConfigService
 from libs.services.cli_bootstrap import xqueue_repo_root
 from libs.infra.database import create_session_factory, create_sqlite_engine
 from libs.infra.models import Base, WorkerModel
@@ -359,3 +377,80 @@ def test_paused_controller_mode_does_not_refresh_worker_heartbeat(tmp_path: Path
     assert worker is not None
     assert ensure_utc(worker.heartbeat_at) == stale_heartbeat
     assert worker.state == "stopped"
+
+
+def test_controller_pool_actions_preserve_known_config_and_are_idempotent(tmp_path: Path) -> None:
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "state_root": str(tmp_path / "state"),
+                "queue": {"default_queue": "default"},
+                "controller": {
+                    "pools": {
+                        "existing": {
+                            "queues": ["existing"],
+                            "concurrency": 1,
+                        }
+                    }
+                },
+            },
+            sort_keys=False,
+        )
+    )
+    service = ControllerPoolConfigService()
+
+    created = EnsureControllerPoolAction(service)(
+        config_path=config_path,
+        name="xpm",
+        queues=["xpm"],
+        concurrency=2,
+        lease_seconds=45,
+        restart_policy=RestartPolicy.ON_FAILURE,
+    )
+    noop = EnsureControllerPoolAction(service)(
+        config_path=config_path,
+        name="xpm",
+        queues=["xpm"],
+        concurrency=2,
+        lease_seconds=45,
+        restart_policy=RestartPolicy.ON_FAILURE,
+    )
+    listed = ListControllerPoolsAction(service)(config_path=config_path)
+    removed = RemoveControllerPoolAction(service)(config_path=config_path, name="xpm")
+    removed_again = RemoveControllerPoolAction(service)(config_path=config_path, name="xpm")
+
+    assert created.item.action == "created"
+    assert created.item.restart_required is True
+    assert noop.item.action == "noop"
+    assert noop.item.restart_required is False
+    assert [item.name for item in listed.items] == ["existing", "xpm"]
+    assert removed.item.action == "removed"
+    assert removed.item.restart_required is True
+    assert removed_again.item.action == "noop"
+
+    saved = yaml.safe_load(config_path.read_text())
+    assert saved["state_root"] == str(tmp_path / "state")
+    assert saved["queue"] == {"default_queue": "default"}
+    assert saved["controller"]["pools"] == {
+        "existing": {
+            "queues": ["existing"],
+            "concurrency": 1,
+        }
+    }
+
+
+def test_controller_pool_actions_reject_unknown_config_fields(tmp_path: Path) -> None:
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(yaml.safe_dump({"unexpected": True}))
+
+    with pytest.raises(ValidationError) as exc:
+        EnsureControllerPoolAction(ControllerPoolConfigService())(
+            config_path=config_path,
+            name="xpm",
+            queues=["xpm"],
+            concurrency=1,
+        )
+
+    assert exc.value.code == "validation_error"
+    assert exc.value.details["config_path"] == str(config_path)

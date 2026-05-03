@@ -6,9 +6,10 @@ from pathlib import Path
 from typing import Callable
 
 from libs.actions.logging import log_action
-from libs.domain.config import EffectiveConfig
+from libs.domain.config import EffectiveConfig, RestartPolicy
 from libs.domain.models import ControllerState
-from libs.domain.responses import DetailResponse, MutationResponse
+from libs.domain.responses import DetailResponse, ListResponse, MutationResponse
+from libs.services.config import ControllerPoolConfigService
 from libs.services.controller import ControllerService
 
 
@@ -176,3 +177,83 @@ class ManagedControllerStatusAction:
     )
     def __call__(self, *, controller_id: str) -> DetailResponse:
         return DetailResponse(item=self._managed_service.status(controller_id=controller_id))
+
+
+class ListControllerPoolsAction:
+    """List static controller worker pools from xqueue config."""
+
+    def __init__(self, pool_config: ControllerPoolConfigService) -> None:
+        self._pool_config = pool_config
+
+    @log_action(
+        "list_controller_pools",
+        context_getter=lambda self, *, config_path: {"config_path": str(config_path)},
+        result_getter=lambda result: {"pool_count": len(result.items)},
+    )
+    def __call__(self, *, config_path: Path) -> ListResponse:
+        return ListResponse(items=self._pool_config.list_pools(config_path=config_path))
+
+
+class EnsureControllerPoolAction:
+    """Create or update one static controller worker pool."""
+
+    def __init__(self, pool_config: ControllerPoolConfigService) -> None:
+        self._pool_config = pool_config
+
+    @log_action(
+        "ensure_controller_pool",
+        context_getter=lambda self, *, name, queues, concurrency, config_path, **_: {
+            "name": name,
+            "queues": queues,
+            "concurrency": concurrency,
+            "config_path": str(config_path),
+        },
+        result_getter=lambda result: {
+            "name": result.item.name,
+            "action": result.item.action,
+            "restart_required": result.item.restart_required,
+        },
+    )
+    def __call__(
+        self,
+        *,
+        config_path: Path,
+        name: str,
+        queues: list[str],
+        concurrency: int,
+        poll_interval_seconds: float | None = None,
+        lease_seconds: int = 30,
+        restart_policy: RestartPolicy = RestartPolicy.ON_FAILURE,
+        default_timeout_seconds: int | None = None,
+    ) -> MutationResponse:
+        return MutationResponse(
+            item=self._pool_config.ensure_pool(
+                config_path=config_path,
+                name=name,
+                queues=queues,
+                concurrency=concurrency,
+                poll_interval_seconds=poll_interval_seconds,
+                lease_seconds=lease_seconds,
+                restart_policy=restart_policy,
+                default_timeout_seconds=default_timeout_seconds,
+            )
+        )
+
+
+class RemoveControllerPoolAction:
+    """Remove one static controller worker pool."""
+
+    def __init__(self, pool_config: ControllerPoolConfigService) -> None:
+        self._pool_config = pool_config
+
+    @log_action(
+        "remove_controller_pool",
+        context_getter=lambda self, *, name, config_path: {"name": name, "config_path": str(config_path)},
+        result_getter=lambda result: {
+            "name": result.item.name,
+            "action": result.item.action,
+            "restart_required": result.item.restart_required,
+        },
+    )
+    def __call__(self, *, config_path: Path, name: str) -> MutationResponse:
+        return MutationResponse(item=self._pool_config.remove_pool(config_path=config_path, name=name))

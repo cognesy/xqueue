@@ -242,6 +242,17 @@ Worker states are separate from job states:
 
 Controller mode supervises configured worker pools. It does not schedule jobs.
 
+Prefer the pool-management commands over hand-editing YAML:
+
+```sh
+uv run xq controller pools ensure agent --queue agent --concurrency 2 --workspace-instance
+uv run xq -o json controller pools list --workspace-instance
+uv run xq controller pools remove agent --workspace-instance
+```
+
+Changed pool config reports `restart_required`; restart the controller before
+expecting running controller processes to use the new definition.
+
 Example `instance/config.yaml`:
 
 ```yaml

@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from libs.domain.config import EffectiveConfig
 from libs.domain.models import (
     ControllerCommandResult,
+    ControllerPoolConfigView,
+    ControllerPoolMutationResult,
     ControllerStatusView,
     DatabaseCheckResult,
     DatabaseVacuumResult,
@@ -193,6 +195,33 @@ def _build_contracts() -> dict[str, CommandContract]:
             item_key="item",
             item_model=controller_status_item,
             default_item_fields=("controller_id", "service_name"),
+        ),
+        "controller.pools.list": contract_from_model(
+            "controller.pools.list",
+            "list",
+            ListResponse,
+            default_fields=("items",),
+            list_key="items",
+            list_row_model=ControllerPoolConfigView,
+            default_row_fields=("name", "queues", "concurrency"),
+        ),
+        "controller.pools.ensure": contract_from_model(
+            "controller.pools.ensure",
+            "mutation",
+            MutationResponse,
+            default_fields=("ok", "item"),
+            item_key="item",
+            item_model=ControllerPoolMutationResult,
+            default_item_fields=("action", "name", "restart_required", "restart_command"),
+        ),
+        "controller.pools.remove": contract_from_model(
+            "controller.pools.remove",
+            "mutation",
+            MutationResponse,
+            default_fields=("ok", "item"),
+            item_key="item",
+            item_model=ControllerPoolMutationResult,
+            default_item_fields=("action", "name", "restart_required", "restart_command"),
         ),
         "controller.install": contract_from_model(
             "controller.install",

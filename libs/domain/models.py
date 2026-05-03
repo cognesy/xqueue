@@ -504,6 +504,33 @@ class ControllerPoolView(BaseModel):
     workers: list[ControllerWorkerView] = Field(default_factory=list)
 
 
+class ControllerPoolConfigView(BaseModel):
+    """Static controller pool configuration exposed by pool-management commands."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    name: str
+    queues: list[str] = Field(default_factory=list)
+    concurrency: int = 1
+    poll_interval_seconds: float | None = None
+    lease_seconds: int = 30
+    restart_policy: str
+    default_timeout_seconds: int | None = None
+
+
+class ControllerPoolMutationResult(BaseModel):
+    """Summary of one controller pool config mutation."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    action: str
+    name: str
+    pool: ControllerPoolConfigView | None = None
+    config_path: str
+    restart_required: bool
+    restart_command: str | None = None
+
+
 class ControllerStatusView(BaseModel):
     """Operator-visible controller status."""
 

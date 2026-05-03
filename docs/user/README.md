@@ -133,6 +133,7 @@ Current operator-facing commands:
 - `xq queues list|stats|pause|resume`
 - `xq worker run`
 - `xq workers list|pause|resume|drain|stop`
+- `xq controller pools list|ensure|remove`
 - `xq controller run|status|install|uninstall|start|drain|restart|stop`
 - `xq config show`
 - `xq health`

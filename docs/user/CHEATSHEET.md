@@ -133,6 +133,8 @@ uv run xq workers stop <worker-id> --workspace-instance
 Run directly:
 
 ```sh
+uv run xq controller pools ensure agent --queue agent --workspace-instance
+uv run xq -o json controller pools list --workspace-instance
 uv run xq controller run --workspace-instance --controller-id default
 uv run xq -o json controller status --workspace-instance
 ```
@@ -157,6 +159,10 @@ uv run xq controller restart --workspace-instance --platform launchd
 uv run xq controller stop --workspace-instance --platform launchd
 uv run xq controller uninstall --workspace-instance --platform launchd
 ```
+
+Changing `controller.pools` requires a controller restart before running
+controller processes use the new pool definition. Use `controller pools remove
+<name>` to delete a configured pool.
 
 `pause-intake` is controller-wide for direct mode. `queues pause` is per queue.
 

@@ -10,18 +10,22 @@ import typer
 from apps.cli.output import Output, OutputFormat
 from apps.cli.runtime import run_action
 from libs.actions.controller import (
+    EnsureControllerPoolAction,
     InstallManagedControllerAction,
+    ListControllerPoolsAction,
     ManagedControllerLifecycleAction,
     ManagedControllerStatusAction,
+    RemoveControllerPoolAction,
     RequestControllerStateAction,
     RunControllerAction,
     ShowControllerStatusAction,
     UninstallManagedControllerAction,
 )
+from libs.domain.config import RestartPolicy
 from libs.domain.errors import ValidationError
 from libs.domain.models import ControllerState, ServiceManagerKind
 from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.services.config import ConfigLoader
+from libs.services.config import ConfigLoader, ControllerPoolConfigService
 from libs.services.controller import ControllerService
 from libs.services.database import SessionManager
 from libs.services.launchd import LaunchdService
@@ -30,6 +34,7 @@ from libs.services.workers import WorkerService
 
 
 app = typer.Typer(help="Supervise configured worker pools in direct controller mode.")
+pools_app = typer.Typer(help="Manage static controller worker pool configuration.")
 
 
 def _build_runtime(use_workspace_instance: bool):
@@ -45,6 +50,13 @@ def _build_runtime(use_workspace_instance: bool):
         WorkerService(),
     )
     return workspace_root, config, controller_service
+
+
+def _resolve_config_path(use_workspace_instance: bool) -> Path:
+    return ConfigLoader().resolve_paths(
+        workspace_root=Path.cwd(),
+        use_workspace_instance=use_workspace_instance,
+    ).config_file
 
 
 def _resolve_managed_platform(platform: ServiceManagerKind | None) -> ServiceManagerKind:
@@ -271,3 +283,77 @@ app.command("resume-intake")(_request_direct_state_command(ControllerState.ACTIV
 app.command("drain")(_request_state_command(ControllerState.DRAINING))
 app.command("restart")(_request_state_command(ControllerState.RESTARTING))
 app.command("stop")(_request_state_command(ControllerState.STOPPING))
+
+
+@pools_app.command("list")
+def list_controller_pools(
+    ctx: typer.Context,
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
+    use_workspace_instance: bool = typer.Option(
+        False,
+        "--workspace-instance",
+        help="Resolve runtime paths relative to the repository instance directory.",
+        hidden=True,
+    ),
+) -> None:
+    """List configured controller worker pools."""
+    config_path = _resolve_config_path(use_workspace_instance)
+    action = ListControllerPoolsAction(ControllerPoolConfigService())
+    run_action(lambda: action(config_path=config_path), out=Output(ctx, "controller.pools.list", output))
+
+
+@pools_app.command("ensure")
+def ensure_controller_pool(
+    ctx: typer.Context,
+    name: str = typer.Argument(...),
+    queue: list[str] = typer.Option(..., "--queue", "-q", help="Queue served by the pool. Repeat for multiple queues."),
+    concurrency: int = typer.Option(1, "--concurrency", min=1),
+    poll_interval_seconds: float | None = typer.Option(None, "--poll-interval", min=0.001),
+    lease_seconds: int = typer.Option(30, "--lease", min=1),
+    restart_policy: RestartPolicy = typer.Option(RestartPolicy.ON_FAILURE, "--restart-policy"),
+    default_timeout_seconds: int | None = typer.Option(None, "--timeout", min=1),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
+    use_workspace_instance: bool = typer.Option(
+        False,
+        "--workspace-instance",
+        help="Resolve runtime paths relative to the repository instance directory.",
+        hidden=True,
+    ),
+) -> None:
+    """Create or update a configured controller worker pool."""
+    config_path = _resolve_config_path(use_workspace_instance)
+    action = EnsureControllerPoolAction(ControllerPoolConfigService())
+    run_action(
+        lambda: action(
+            config_path=config_path,
+            name=name,
+            queues=queue,
+            concurrency=concurrency,
+            poll_interval_seconds=poll_interval_seconds,
+            lease_seconds=lease_seconds,
+            restart_policy=restart_policy,
+            default_timeout_seconds=default_timeout_seconds,
+        ),
+        out=Output(ctx, "controller.pools.ensure", output),
+    )
+
+
+@pools_app.command("remove")
+def remove_controller_pool(
+    ctx: typer.Context,
+    name: str = typer.Argument(...),
+    output: OutputFormat | None = typer.Option(None, "--output", "-o"),
+    use_workspace_instance: bool = typer.Option(
+        False,
+        "--workspace-instance",
+        help="Resolve runtime paths relative to the repository instance directory.",
+        hidden=True,
+    ),
+) -> None:
+    """Remove a configured controller worker pool."""
+    config_path = _resolve_config_path(use_workspace_instance)
+    action = RemoveControllerPoolAction(ControllerPoolConfigService())
+    run_action(lambda: action(config_path=config_path, name=name), out=Output(ctx, "controller.pools.remove", output))
+
+
+app.add_typer(pools_app, name="pools")
