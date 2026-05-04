@@ -6,10 +6,10 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from libs.domain.errors import NotFoundError
-from libs.domain.models import AttemptLogPaths, AttemptState, JobDetail, JobState, ProcessExecutionResult, StartedAttempt
-from libs.infra.models import AttemptModel, EventModel, JobModel
-from libs.services.jobs import JobService
+from xqueue_libs.domain.errors import NotFoundError
+from xqueue_libs.domain.models import AttemptLogPaths, AttemptState, JobDetail, JobState, ProcessExecutionResult, StartedAttempt
+from xqueue_libs.infra.models import AttemptModel, EventModel, JobModel
+from xqueue_libs.services.jobs import JobService
 
 
 class AttemptService:

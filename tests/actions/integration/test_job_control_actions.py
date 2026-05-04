@@ -8,18 +8,18 @@ from pathlib import Path
 import pytest
 from sqlalchemy import text
 
-from libs.actions.jobs import CancelJobAction, DeleteJobAction, RetryJobAction
-from libs.domain.errors import ConflictError
-from libs.actions.workers import RunWorkerAction
-from libs.domain.models import RegisterWorkerInput
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.infra.models import AttemptModel, Base, JobModel
-from libs.services.attempts import AttemptService
-from libs.services.database import SessionManager
-from libs.services.execution import CommandExecutionService
-from libs.services.job_logs import JobLogService
-from libs.services.jobs import JobService
-from libs.services.workers import WorkerService
+from xqueue_libs.actions.jobs import CancelJobAction, DeleteJobAction, RetryJobAction
+from xqueue_libs.domain.errors import ConflictError
+from xqueue_libs.actions.workers import RunWorkerAction
+from xqueue_libs.domain.models import RegisterWorkerInput
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.infra.models import AttemptModel, Base, JobModel
+from xqueue_libs.services.attempts import AttemptService
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.execution import CommandExecutionService
+from xqueue_libs.services.job_logs import JobLogService
+from xqueue_libs.services.jobs import JobService
+from xqueue_libs.services.workers import WorkerService
 
 
 def _build_run_worker_action(*, session_factory, log_root: Path, clock) -> RunWorkerAction:
@@ -406,7 +406,7 @@ def test_retry_job_action_rejects_non_terminal_states(tmp_path: Path) -> None:
                 )
             )
 
-        from libs.domain.errors import ConflictError as _ConflictError
+        from xqueue_libs.domain.errors import ConflictError as _ConflictError
         action = RetryJobAction(SessionManager(session_factory), JobService(), clock=lambda: now)
         with pytest.raises(_ConflictError):
             action(f"job-{state}")

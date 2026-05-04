@@ -4,8 +4,8 @@ import json
 
 import structlog
 
-from libs.services.logging import default_logging_config_path, load_logging_config
-import libs.services.logging as xqueue_logging
+from xqueue_libs.services.logging import default_logging_config_path, load_logging_config
+import xqueue_libs.services.logging as xqueue_logging
 
 
 def _reset_logging() -> None:

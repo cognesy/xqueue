@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from libs.services.tmux_renderer import render_tmux
+from xqueue_libs.services.tmux_renderer import render_tmux
 
 
 def test_render_tmux_detail_response() -> None:

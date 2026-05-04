@@ -6,9 +6,9 @@ from pathlib import Path
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from libs.infra.database import sqlite_url
-from libs.infra.models import Base
-from libs.services.config import ConfigLoader
+from xqueue_libs.infra.database import sqlite_url
+from xqueue_libs.infra.models import Base
+from xqueue_libs.services.config import ConfigLoader
 
 
 target_metadata = Base.metadata
@@ -19,8 +19,8 @@ def get_database_url() -> str:
     if explicit_path:
         return sqlite_url(Path(explicit_path))
 
-    repo_root = Path(__file__).resolve().parents[2]
-    config = ConfigLoader().load(workspace_root=repo_root, use_workspace_instance=True)
+    workspace_root = Path(os.environ.get("XQUEUE_WORKSPACE_ROOT", Path.cwd()))
+    config = ConfigLoader().load(workspace_root=workspace_root, use_workspace_instance=True)
     return sqlite_url(config.paths.database_path)
 
 

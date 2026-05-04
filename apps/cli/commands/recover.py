@@ -6,13 +6,13 @@ from pathlib import Path
 
 import typer
 
-from apps.cli.output import Output, OutputFormat
-from apps.cli.runtime import run_action
-from libs.actions.recovery import RecoverStaleLeasesAction
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.services.config import ConfigLoader
-from libs.services.database import SessionManager
-from libs.services.recovery import RecoveryService
+from xqueue_cli.output import Output, OutputFormat
+from xqueue_cli.runtime import run_action
+from xqueue_libs.actions.recovery import RecoverStaleLeasesAction
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.services.config import ConfigLoader
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.recovery import RecoveryService
 
 
 app = typer.Typer(help="Recover stale worker leases and related runtime issues.")

@@ -7,15 +7,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
-from libs.actions.logging import log_action
-from libs.domain.models import AttemptLogStream, EnqueueJobInput, JobListFilters, JobLogLivenessView, JobPaneView, JobState
-from libs.domain.responses import DetailResponse, ListResponse, MutationResponse
-from libs.services.database import SessionManager
-from libs.services.job_logs import JobLogService
-from libs.services.jobs import JobService
-from libs.services.metrics import MetricsService
-from libs.services.pruning import JobPruningService
-from libs.services.queues import QueueService
+from xqueue_libs.actions.logging import log_action
+from xqueue_libs.domain.models import AttemptLogStream, EnqueueJobInput, JobListFilters, JobLogLivenessView, JobPaneView, JobState
+from xqueue_libs.domain.responses import DetailResponse, ListResponse, MutationResponse
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.job_logs import JobLogService
+from xqueue_libs.services.jobs import JobService
+from xqueue_libs.services.metrics import MetricsService
+from xqueue_libs.services.pruning import JobPruningService
+from xqueue_libs.services.queues import QueueService
 
 
 def utc_now() -> datetime:

@@ -9,8 +9,8 @@ from typing import Any, ParamSpec, TypeVar
 
 import structlog
 
-from libs.domain.errors import XqueueError
-from libs.services.logging import configure_logging
+from xqueue_libs.domain.errors import XqueueError
+from xqueue_libs.services.logging import configure_logging
 
 
 P = ParamSpec("P")

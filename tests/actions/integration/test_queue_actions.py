@@ -5,16 +5,16 @@ from pathlib import Path
 
 from sqlalchemy import text
 
-from libs.actions.jobs import PurgeJobsAction
-from libs.actions.queues import ListQueueStatsAction, ListQueuesAction, PauseQueueAction, ResumeQueueAction
-from libs.actions.workers import RunWorkerAction
-from libs.domain.models import RegisterWorkerInput
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.infra.models import AttemptModel, Base, EventModel, JobModel
-from libs.services.database import SessionManager
-from libs.services.jobs import JobService
-from libs.services.queues import QueueService
-from libs.services.workers import WorkerService
+from xqueue_libs.actions.jobs import PurgeJobsAction
+from xqueue_libs.actions.queues import ListQueueStatsAction, ListQueuesAction, PauseQueueAction, ResumeQueueAction
+from xqueue_libs.actions.workers import RunWorkerAction
+from xqueue_libs.domain.models import RegisterWorkerInput
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.infra.models import AttemptModel, Base, EventModel, JobModel
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.jobs import JobService
+from xqueue_libs.services.queues import QueueService
+from xqueue_libs.services.workers import WorkerService
 
 
 def test_queue_actions_list_and_stats_include_job_counts(tmp_path: Path) -> None:

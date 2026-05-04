@@ -9,8 +9,8 @@ from os import getuid
 from pathlib import Path
 from typing import Callable
 
-from libs.domain.models import ManagedControllerInstallView, ManagedControllerStatusView, ServiceManagerKind
-from libs.services.cli_bootstrap import xqueue_python_command
+from xqueue_libs.domain.models import ManagedControllerInstallView, ManagedControllerStatusView, ServiceManagerKind
+from xqueue_libs.services.cli_bootstrap import xqueue_python_command
 
 SERVICE_LOG_KEYS = ("StandardOutPath", "StandardErrorPath")
 

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from libs.actions.logging import log_action
-from libs.domain.config import EffectiveConfig
-from libs.services.config import ConfigLoader
+from xqueue_libs.actions.logging import log_action
+from xqueue_libs.domain.config import EffectiveConfig
+from xqueue_libs.services.config import ConfigLoader
 
 
 class ShowConfigAction:

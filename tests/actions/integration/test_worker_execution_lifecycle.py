@@ -8,16 +8,16 @@ from pathlib import Path
 
 from sqlalchemy import text
 
-from libs.actions.workers import RunWorkerAction, RunWorkerLoopAction
-from libs.domain.models import RegisterWorkerInput
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.infra.models import Base, JobModel
-from libs.services.database import SessionManager
-from libs.services.attempts import AttemptService
-from libs.services.execution import CommandExecutionService
-from libs.services.jobs import JobService
-from libs.services.recovery import RecoveryService
-from libs.services.workers import WorkerService
+from xqueue_libs.actions.workers import RunWorkerAction, RunWorkerLoopAction
+from xqueue_libs.domain.models import RegisterWorkerInput
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.infra.models import Base, JobModel
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.attempts import AttemptService
+from xqueue_libs.services.execution import CommandExecutionService
+from xqueue_libs.services.jobs import JobService
+from xqueue_libs.services.recovery import RecoveryService
+from xqueue_libs.services.workers import WorkerService
 
 
 def _build_action(

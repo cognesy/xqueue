@@ -7,9 +7,9 @@ import sys
 
 import typer
 
-from apps.cli.output import Output, OutputFormat
-from apps.cli.runtime import run_action
-from libs.actions.controller import (
+from xqueue_cli.output import Output, OutputFormat
+from xqueue_cli.runtime import run_action
+from xqueue_libs.actions.controller import (
     EnsureControllerPoolAction,
     InstallManagedControllerAction,
     ListControllerPoolsAction,
@@ -21,16 +21,16 @@ from libs.actions.controller import (
     ShowControllerStatusAction,
     UninstallManagedControllerAction,
 )
-from libs.domain.config import RestartPolicy
-from libs.domain.errors import ValidationError
-from libs.domain.models import ControllerState, ServiceManagerKind
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.services.config import ConfigLoader, ControllerPoolConfigService
-from libs.services.controller import ControllerService
-from libs.services.database import SessionManager
-from libs.services.launchd import LaunchdService
-from libs.services.systemd import SystemdUserService
-from libs.services.workers import WorkerService
+from xqueue_libs.domain.config import RestartPolicy
+from xqueue_libs.domain.errors import ValidationError
+from xqueue_libs.domain.models import ControllerState, ServiceManagerKind
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.services.config import ConfigLoader, ControllerPoolConfigService
+from xqueue_libs.services.controller import ControllerService
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.launchd import LaunchdService
+from xqueue_libs.services.systemd import SystemdUserService
+from xqueue_libs.services.workers import WorkerService
 
 
 app = typer.Typer(help="Supervise configured worker pools in direct controller mode.")

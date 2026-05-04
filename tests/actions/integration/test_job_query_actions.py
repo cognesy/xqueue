@@ -5,14 +5,14 @@ from pathlib import Path
 
 import pytest
 
-from libs.actions.jobs import ListJobsAction, ShowJobAction, TailJobLogsAction
-from libs.domain.errors import NotFoundError
-from libs.domain.models import AttemptLogStream, JobListFilters, JobListSort
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.infra.models import AttemptModel, Base, JobModel
-from libs.services.database import SessionManager
-from libs.services.job_logs import JobLogService
-from libs.services.jobs import JobService
+from xqueue_libs.actions.jobs import ListJobsAction, ShowJobAction, TailJobLogsAction
+from xqueue_libs.domain.errors import NotFoundError
+from xqueue_libs.domain.models import AttemptLogStream, JobListFilters, JobListSort
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.infra.models import AttemptModel, Base, JobModel
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.job_logs import JobLogService
+from xqueue_libs.services.jobs import JobService
 
 
 def test_list_jobs_action_filters_and_sorts_jobs(tmp_path: Path) -> None:

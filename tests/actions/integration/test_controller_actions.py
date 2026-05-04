@@ -7,13 +7,13 @@ from pathlib import Path
 import pytest
 import yaml
 
-from libs.actions.controller import (
+from xqueue_libs.actions.controller import (
     EnsureControllerPoolAction,
     ListControllerPoolsAction,
     RemoveControllerPoolAction,
     RunControllerAction,
 )
-from libs.domain.config import (
+from xqueue_libs.domain.config import (
     ControllerConfig,
     ControllerPoolConfig,
     EffectiveConfig,
@@ -22,16 +22,15 @@ from libs.domain.config import (
     RuntimePaths,
     WorkerDefaults,
 )
-from libs.domain.errors import ValidationError
-from libs.domain.models import ControllerState
-from libs.services.config import ControllerPoolConfigService
-from libs.services.cli_bootstrap import xqueue_repo_root
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.infra.models import Base, WorkerModel
-from libs.services.controller import ControllerService
-from libs.services.database import SessionManager
-from libs.services.datetimes import ensure_utc
-from libs.services.workers import WorkerService
+from xqueue_libs.domain.errors import ValidationError
+from xqueue_libs.domain.models import ControllerState
+from xqueue_libs.services.config import ControllerPoolConfigService
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.infra.models import Base, WorkerModel
+from xqueue_libs.services.controller import ControllerService
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.datetimes import ensure_utc
+from xqueue_libs.services.workers import WorkerService
 
 
 def test_run_controller_action_restarts_failed_pool_worker(tmp_path: Path) -> None:
@@ -94,8 +93,7 @@ def test_run_controller_action_restarts_failed_pool_worker(tmp_path: Path) -> No
 
     assert result.item.state == ControllerState.STOPPED
     assert len(launch_calls) >= 2
-    assert "sys.path.insert" in launch_calls[0][2]
-    assert str(xqueue_repo_root()) in launch_calls[0][2]
+    assert launch_calls[0][1:3] == ["-m", "xqueue_cli"]
     assert result.item.pools[0].workers[0].restart_count >= 1
     assert (tmp_path / "run" / "controller-default.status.json").exists()
 

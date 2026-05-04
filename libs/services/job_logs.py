@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import deque
 from pathlib import Path
 
-from libs.domain.errors import NotFoundError
+from xqueue_libs.domain.errors import NotFoundError
 
 
 class JobLogService:

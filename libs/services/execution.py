@@ -10,9 +10,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Callable
 
-from libs.domain.errors import ValidationError
-from libs.domain.models import AttemptLogPaths, ProcessExecutionResult, ShellExecutionRequest
-from libs.services.operation_logs import JobOperationLogService
+from xqueue_libs.domain.errors import ValidationError
+from xqueue_libs.domain.models import AttemptLogPaths, ProcessExecutionResult, ShellExecutionRequest
+from xqueue_libs.services.operation_logs import JobOperationLogService
 
 
 def utc_now() -> datetime:

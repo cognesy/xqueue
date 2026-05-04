@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from toon import decode
 
-from libs.services.toon_renderer import normalize_for_toon, render_toon
+from xqueue_libs.services.toon_renderer import normalize_for_toon, render_toon
 
 
 def test_normalize_for_toon_converts_container_types() -> None:

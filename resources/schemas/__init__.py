@@ -1,0 +1,1 @@
+"""Schema resources for xqueue."""

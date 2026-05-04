@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from libs.services.axi_contracts import COMMAND_CONTRACTS, get_command_contract, validate_requested_fields
+from xqueue_libs.services.axi_contracts import COMMAND_CONTRACTS, get_command_contract, validate_requested_fields
 
 
 def test_contract_registry_covers_current_command_surface() -> None:

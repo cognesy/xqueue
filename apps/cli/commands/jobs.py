@@ -6,9 +6,9 @@ from pathlib import Path
 
 import typer
 
-from apps.cli.output import Output, OutputFormat
-from apps.cli.runtime import run_action
-from libs.actions.jobs import (
+from xqueue_cli.output import Output, OutputFormat
+from xqueue_cli.runtime import run_action
+from xqueue_libs.actions.jobs import (
     CancelJobAction,
     DeleteJobAction,
     JobPaneAction,
@@ -19,14 +19,14 @@ from libs.actions.jobs import (
     ShowJobAction,
     TailJobLogsAction,
 )
-from libs.domain.models import AttemptLogStream, JobListFilters, JobListSort, JobState
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.services.config import ConfigLoader
-from libs.services.database import SessionManager
-from libs.services.job_logs import JobLogService
-from libs.services.jobs import JobService
-from libs.services.pruning import JobPruningService
-from libs.services.queues import QueueService
+from xqueue_libs.domain.models import AttemptLogStream, JobListFilters, JobListSort, JobState
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.services.config import ConfigLoader
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.job_logs import JobLogService
+from xqueue_libs.services.jobs import JobService
+from xqueue_libs.services.pruning import JobPruningService
+from xqueue_libs.services.queues import QueueService
 
 
 app = typer.Typer(help="Inspect queued and executed jobs.")

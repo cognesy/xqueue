@@ -4,9 +4,9 @@ import json
 
 from typer.testing import CliRunner
 
-from apps.cli.exit_codes import ExitCode, map_error_to_exit_code
-from apps.cli.main import app
-from libs.domain.errors import ConflictError, NotFoundError, OperationTimeoutError, RuntimeExecutionError, ValidationError
+from xqueue_cli.exit_codes import ExitCode, map_error_to_exit_code
+from xqueue_cli.main import app
+from xqueue_libs.domain.errors import ConflictError, NotFoundError, OperationTimeoutError, RuntimeExecutionError, ValidationError
 
 
 runner = CliRunner()

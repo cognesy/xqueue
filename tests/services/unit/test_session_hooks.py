@@ -3,14 +3,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from libs.services.session_hooks import ensure_agent_hooks, inspect_agent_hooks
+from xqueue_libs.services.session_hooks import ensure_agent_hooks, inspect_agent_hooks
 
 
 def test_ensure_agent_hooks_creates_repo_local_files(tmp_path: Path, monkeypatch) -> None:
     executable = tmp_path / "bin" / "xq"
     executable.parent.mkdir(parents=True, exist_ok=True)
     executable.write_text("", encoding="utf-8")
-    monkeypatch.setattr("libs.services.session_hooks.resolve_executable", lambda: executable)
+    monkeypatch.setattr("xqueue_libs.services.session_hooks.resolve_executable", lambda: executable)
 
     result = ensure_agent_hooks(tmp_path)
 
@@ -26,7 +26,7 @@ def test_ensure_agent_hooks_repairs_existing_paths(tmp_path: Path, monkeypatch) 
     executable = tmp_path / "bin" / "xq"
     executable.parent.mkdir(parents=True, exist_ok=True)
     executable.write_text("", encoding="utf-8")
-    monkeypatch.setattr("libs.services.session_hooks.resolve_executable", lambda: executable)
+    monkeypatch.setattr("xqueue_libs.services.session_hooks.resolve_executable", lambda: executable)
 
     claude_path = tmp_path / ".claude" / "settings.json"
     claude_path.parent.mkdir(parents=True, exist_ok=True)

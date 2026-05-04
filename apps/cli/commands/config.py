@@ -6,10 +6,10 @@ from pathlib import Path
 
 import typer
 
-from apps.cli.output import Output, OutputFormat
-from apps.cli.runtime import run_action
-from libs.actions.config import ShowConfigAction
-from libs.services.config import ConfigLoader
+from xqueue_cli.output import Output, OutputFormat
+from xqueue_cli.runtime import run_action
+from xqueue_libs.actions.config import ShowConfigAction
+from xqueue_libs.services.config import ConfigLoader
 
 
 app = typer.Typer(help="Inspect static configuration and resolved runtime paths.")

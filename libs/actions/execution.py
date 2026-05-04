@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from libs.actions.logging import log_action
-from libs.domain.models import ProcessExecutionResult, ShellExecutionRequest
-from libs.services.execution import CommandExecutionService
+from xqueue_libs.actions.logging import log_action
+from xqueue_libs.domain.models import ProcessExecutionResult, ShellExecutionRequest
+from xqueue_libs.services.execution import CommandExecutionService
 
 
 class RunShellCommandAction:

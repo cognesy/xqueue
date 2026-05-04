@@ -1,1 +1,1 @@
-"""CLI application package for xqueue."""
+"""xqueue CLI application package."""

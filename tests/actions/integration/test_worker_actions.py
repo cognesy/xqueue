@@ -6,12 +6,12 @@ from pathlib import Path
 
 from sqlalchemy import text
 
-from libs.actions.workers import ClaimNextJobAction, RegisterWorkerAction, RunWorkerAction
-from libs.domain.models import RegisterWorkerInput
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.infra.models import Base, JobModel
-from libs.services.database import SessionManager
-from libs.services.workers import WorkerService
+from xqueue_libs.actions.workers import ClaimNextJobAction, RegisterWorkerAction, RunWorkerAction
+from xqueue_libs.domain.models import RegisterWorkerInput
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.infra.models import Base, JobModel
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.workers import WorkerService
 
 
 def test_register_worker_action_persists_active_worker(tmp_path: Path) -> None:

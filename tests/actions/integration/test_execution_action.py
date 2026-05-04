@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from libs.actions.execution import RunShellCommandAction
-from libs.domain.models import ShellExecutionRequest
-from libs.services.execution import CommandExecutionService
+from xqueue_libs.actions.execution import RunShellCommandAction
+from xqueue_libs.domain.models import ShellExecutionRequest
+from xqueue_libs.services.execution import CommandExecutionService
 
 
 def test_run_shell_command_action_executes_and_returns_log_paths(tmp_path: Path) -> None:

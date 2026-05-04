@@ -7,8 +7,8 @@ from datetime import datetime
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session, selectinload
 
-from libs.domain.models import JobState, RetentionCleanupResult
-from libs.infra.models import AttemptModel, EventModel, JobModel
+from xqueue_libs.domain.models import JobState, RetentionCleanupResult
+from xqueue_libs.infra.models import AttemptModel, EventModel, JobModel
 
 
 TERMINAL_JOB_STATES = (

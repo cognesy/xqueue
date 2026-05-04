@@ -5,10 +5,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import UTC, datetime
 
-from libs.actions.logging import log_action
-from libs.domain.responses import MutationResponse
-from libs.services.database import SessionManager
-from libs.services.recovery import RecoveryService
+from xqueue_libs.actions.logging import log_action
+from xqueue_libs.domain.responses import MutationResponse
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.recovery import RecoveryService
 
 
 def utc_now() -> datetime:

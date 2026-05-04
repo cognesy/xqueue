@@ -6,21 +6,20 @@ from pathlib import Path
 
 import typer
 
-from apps.cli.output import Output, OutputFormat
-from apps.cli.runtime import run_action
-from libs.actions.operations import CheckDatabaseAction, CleanupRetentionAction, ResetWorkspaceInstanceAction, VacuumDatabaseAction
-from libs.domain.errors import ValidationError
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.services.config import ConfigLoader
-from libs.services.database import SessionManager
-from libs.services.database_maintenance import DatabaseMaintenanceService
-from libs.services.job_logs import JobLogService
-from libs.services.retention import RetentionCleanupService
-from libs.services.workspace_instance import WorkspaceInstanceService
+from xqueue_cli.output import Output, OutputFormat
+from xqueue_cli.runtime import run_action
+from xqueue_libs.actions.operations import CheckDatabaseAction, CleanupRetentionAction, ResetWorkspaceInstanceAction, VacuumDatabaseAction
+from xqueue_libs.domain.errors import ValidationError
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.services.config import ConfigLoader
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.database_maintenance import DatabaseMaintenanceService
+from xqueue_libs.services.job_logs import JobLogService
+from xqueue_libs.services.retention import RetentionCleanupService
+from xqueue_libs.services.workspace_instance import WorkspaceInstanceService
 
 
 app = typer.Typer(help="Inspect and maintain the SQLite state store.")
-_REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def _build_database_service(use_workspace_instance: bool) -> DatabaseMaintenanceService:
@@ -90,7 +89,7 @@ def reset_workspace_instance(
             workspace_root=Path.cwd(),
             use_workspace_instance=True,
         )
-        return action(paths, alembic_ini_path=_REPO_ROOT / "alembic.ini")
+        return action(paths)
 
     run_action(execute, out=Output(ctx, "db.reset-workspace-instance", output))
 

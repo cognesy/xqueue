@@ -9,9 +9,9 @@ from typing import Any
 import yaml
 from pydantic import ValidationError as PydanticValidationError
 
-from libs.domain.config import ControllerPoolConfig, EffectiveConfig, RestartPolicy, RuntimePaths, StaticConfig
-from libs.domain.errors import ValidationError
-from libs.domain.models import ControllerPoolConfigView, ControllerPoolMutationResult
+from xqueue_libs.domain.config import ControllerPoolConfig, EffectiveConfig, RestartPolicy, RuntimePaths, StaticConfig
+from xqueue_libs.domain.errors import ValidationError
+from xqueue_libs.domain.models import ControllerPoolConfigView, ControllerPoolMutationResult
 
 
 class ConfigLoader:

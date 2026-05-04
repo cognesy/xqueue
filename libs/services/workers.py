@@ -7,12 +7,12 @@ from datetime import datetime
 from sqlalchemy import insert, or_, select, update
 from sqlalchemy.orm import Session
 
-from libs.domain.errors import NotFoundError
-from libs.domain.models import JobDetail, JobState, RegisterWorkerInput, WorkerState, WorkerView
-from libs.infra.models import JobModel, WorkerModel
-from libs.services.datetimes import ensure_utc
-from libs.services.jobs import JobService
-from libs.services.queues import QueueService
+from xqueue_libs.domain.errors import NotFoundError
+from xqueue_libs.domain.models import JobDetail, JobState, RegisterWorkerInput, WorkerState, WorkerView
+from xqueue_libs.infra.models import JobModel, WorkerModel
+from xqueue_libs.services.datetimes import ensure_utc
+from xqueue_libs.services.jobs import JobService
+from xqueue_libs.services.queues import QueueService
 
 
 class WorkerService:

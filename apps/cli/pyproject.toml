@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xqueue-cli"
+version = "0.1.0"
+description = "CLI app package for xqueue"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["xqueue"]
+
+[project.scripts]
+xq = "xqueue_cli.main:main"
+
+[tool.setuptools]
+packages = [
+  "xqueue_cli",
+  "xqueue_cli.commands",
+]
+
+[tool.setuptools.package-dir]
+xqueue_cli = "."

@@ -7,9 +7,9 @@ from pathlib import Path
 
 import typer
 
-from apps.cli.home import build_home_response, collapse_home_path
-from apps.cli.output import Output, OutputFormat
-from libs.domain.responses import (
+from xqueue_cli.home import build_home_response, collapse_home_path
+from xqueue_cli.output import Output, OutputFormat
+from xqueue_libs.domain.responses import (
     ClaudeHookStatus,
     CodexHookStatus,
     DetailResponse,
@@ -18,7 +18,7 @@ from libs.domain.responses import (
     MutationResponse,
     SessionCaptureItem,
 )
-from libs.services.session_hooks import capture_session_end, ensure_agent_hooks, inspect_agent_hooks
+from xqueue_libs.services.session_hooks import capture_session_end, ensure_agent_hooks, inspect_agent_hooks
 
 
 app = typer.Typer(help="Manage agent session hooks for Claude Code and Codex.")

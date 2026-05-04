@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling>=1.27.0"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "xqueue"
@@ -21,13 +21,43 @@ dependencies = [
 ]
 
 [project.scripts]
-xq = "apps.cli.main:main"
+xq = "xqueue_cli.main:main"
 
-[tool.hatch.build.targets.wheel]
-packages = ["apps", "libs"]
+[tool.setuptools]
+include-package-data = true
+packages = [
+  "xqueue_cli",
+  "xqueue_cli.commands",
+  "xqueue_libs",
+  "xqueue_libs.actions",
+  "xqueue_libs.domain",
+  "xqueue_libs.infra",
+  "xqueue_libs.services",
+  "xqueue_resources",
+  "xqueue_resources.alembic",
+  "xqueue_resources.alembic.versions",
+  "xqueue_resources.config",
+  "xqueue_resources.logging",
+  "xqueue_resources.schemas",
+  "xqueue_resources.skills",
+]
 
-[tool.hatch.build.targets.wheel.force-include]
-"resources" = "resources"
+[tool.setuptools.package-dir]
+xqueue_cli = "apps/cli"
+xqueue_libs = "libs"
+xqueue_resources = "resources"
+
+[tool.setuptools.package-data]
+xqueue_resources = [
+  "alembic/.gitkeep",
+  "alembic/env.py",
+  "alembic/script.py.mako",
+  "alembic/versions/*.py",
+  "config/.gitkeep",
+  "logging/*.yaml",
+  "schemas/.gitkeep",
+  "skills/*/SKILL.md",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

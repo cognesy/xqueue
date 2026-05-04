@@ -3,8 +3,8 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from libs.domain.models import ShellExecutionRequest
-from libs.services.execution import CommandExecutionService
+from xqueue_libs.domain.models import ShellExecutionRequest
+from xqueue_libs.services.execution import CommandExecutionService
 
 
 def test_build_attempt_log_paths_is_deterministic(tmp_path: Path) -> None:

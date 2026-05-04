@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typer.testing import CliRunner
 
-from apps.cli.main import app
+from xqueue_cli.main import app
 
 
 runner = CliRunner()

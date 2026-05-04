@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import typer
 
-from apps.cli.output import Output, OutputFormat
-from apps.cli.runtime import run_action
-from libs.actions.metrics import ResetMetricsAction, ShowMetricsAction
+from xqueue_cli.output import Output, OutputFormat
+from xqueue_cli.runtime import run_action
+from xqueue_libs.actions.metrics import ResetMetricsAction, ShowMetricsAction
 
 app = typer.Typer(help="Inspect and reset persisted runtime metrics.")
 

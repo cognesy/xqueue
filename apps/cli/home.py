@@ -8,14 +8,14 @@ from pathlib import Path
 
 from sqlalchemy import select
 
-from libs.domain.models import JobState, WorkerState
-from libs.domain.responses import HomeJobCount, HomeQueueRow, HomeResponse, HomeWorkerRow
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.infra.models import JobModel
-from libs.services.config import ConfigLoader
-from libs.services.database import SessionManager
-from libs.services.queues import QueueService
-from libs.services.workers import WorkerService
+from xqueue_libs.domain.models import JobState, WorkerState
+from xqueue_libs.domain.responses import HomeJobCount, HomeQueueRow, HomeResponse, HomeWorkerRow
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.infra.models import JobModel
+from xqueue_libs.services.config import ConfigLoader
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.queues import QueueService
+from xqueue_libs.services.workers import WorkerService
 
 
 def collapse_home_path(path: str) -> str:

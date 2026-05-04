@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from libs.domain.models import JobState, RecoverStaleLeasesResult, RecoveredLeaseView, StaleLeaseView
-from libs.infra.models import AttemptModel, EventModel, JobModel
-from libs.services.datetimes import ensure_utc
+from xqueue_libs.domain.models import JobState, RecoverStaleLeasesResult, RecoveredLeaseView, StaleLeaseView
+from xqueue_libs.infra.models import AttemptModel, EventModel, JobModel
+from xqueue_libs.services.datetimes import ensure_utc
 
 
 RECOVERY_ERROR = "worker lease expired and job was recovered"

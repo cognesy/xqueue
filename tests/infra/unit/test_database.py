@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 from sqlalchemy import text
 
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.services.database import SessionManager
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.services.database import SessionManager
 
 
 def test_sqlite_engine_applies_wal_and_busy_timeout(tmp_path: Path) -> None:

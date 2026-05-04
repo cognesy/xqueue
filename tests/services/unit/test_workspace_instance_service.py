@@ -4,8 +4,8 @@ from pathlib import Path
 
 from sqlalchemy import create_engine, inspect
 
-from libs.domain.config import RuntimePaths
-from libs.services.workspace_instance import WorkspaceInstanceService
+from xqueue_libs.domain.config import RuntimePaths
+from xqueue_libs.services.workspace_instance import WorkspaceInstanceService
 
 
 def test_reset_removes_runtime_artifacts_and_preserves_config(tmp_path: Path) -> None:
@@ -29,8 +29,7 @@ def test_reset_removes_runtime_artifacts_and_preserves_config(tmp_path: Path) ->
             runtime_root=runtime_root,
             log_root=log_root,
             database_path=database_path,
-        ),
-        alembic_ini_path=Path.cwd() / "alembic.ini",
+        )
     )
 
     assert result.config_file == str(config_file)

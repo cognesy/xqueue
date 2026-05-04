@@ -6,22 +6,22 @@ from pathlib import Path
 
 import typer
 
-from apps.cli.home import build_home_response
-from apps.cli.output import Output, OutputFormat
-from apps.cli.commands.enqueue import register as register_enqueue
-from apps.cli.commands.db import app as db_app
-from apps.cli.commands.config import app as config_app
-from apps.cli.commands.controller import app as controller_app
-from apps.cli.commands.doctor import register as register_doctor
-from apps.cli.commands.health import register as register_health
-from apps.cli.commands.hooks import app as hooks_app
-from apps.cli.commands.jobs import app as jobs_app
-from apps.cli.commands.metrics import app as metrics_app
-from apps.cli.commands.queues import app as queues_app
-from apps.cli.commands.recover import app as recover_app
-from apps.cli.commands.worker import app as worker_app
-from apps.cli.commands.workers import app as workers_app
-from libs.services.logging import configure_logging
+from xqueue_cli.home import build_home_response
+from xqueue_cli.output import Output, OutputFormat
+from xqueue_cli.commands.enqueue import register as register_enqueue
+from xqueue_cli.commands.db import app as db_app
+from xqueue_cli.commands.config import app as config_app
+from xqueue_cli.commands.controller import app as controller_app
+from xqueue_cli.commands.doctor import register as register_doctor
+from xqueue_cli.commands.health import register as register_health
+from xqueue_cli.commands.hooks import app as hooks_app
+from xqueue_cli.commands.jobs import app as jobs_app
+from xqueue_cli.commands.metrics import app as metrics_app
+from xqueue_cli.commands.queues import app as queues_app
+from xqueue_cli.commands.recover import app as recover_app
+from xqueue_cli.commands.worker import app as worker_app
+from xqueue_cli.commands.workers import app as workers_app
+from xqueue_libs.services.logging import configure_logging
 
 app = typer.Typer(
     name="xq",

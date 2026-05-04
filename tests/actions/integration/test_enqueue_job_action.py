@@ -5,12 +5,12 @@ from pathlib import Path
 
 from sqlalchemy import text
 
-from libs.actions.jobs import EnqueueJobAction
-from libs.domain.models import EnqueueJobInput
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.infra.models import Base
-from libs.services.database import SessionManager
-from libs.services.jobs import JobService
+from xqueue_libs.actions.jobs import EnqueueJobAction
+from xqueue_libs.domain.models import EnqueueJobInput
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.infra.models import Base
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.jobs import JobService
 
 
 def test_enqueue_job_action_persists_queued_job(tmp_path: Path) -> None:

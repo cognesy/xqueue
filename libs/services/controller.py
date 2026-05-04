@@ -12,9 +12,9 @@ from pathlib import Path
 from time import sleep
 from typing import Callable, Protocol
 
-from libs.domain.config import ControllerPoolConfig, EffectiveConfig, RestartPolicy
-from libs.domain.errors import NotFoundError
-from libs.domain.models import (
+from xqueue_libs.domain.config import ControllerPoolConfig, EffectiveConfig, RestartPolicy
+from xqueue_libs.domain.errors import NotFoundError
+from xqueue_libs.domain.models import (
     ControllerCommandResult,
     ControllerPoolView,
     ControllerState,
@@ -22,9 +22,9 @@ from libs.domain.models import (
     ControllerWorkerView,
     WorkerState,
 )
-from libs.services.cli_bootstrap import xqueue_python_command
-from libs.services.database import SessionManager
-from libs.services.workers import WorkerService
+from xqueue_libs.services.cli_bootstrap import xqueue_python_command
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.workers import WorkerService
 
 
 def utc_now() -> datetime:

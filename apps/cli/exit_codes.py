@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import IntEnum
 
-from libs.domain.errors import ConflictError, NotFoundError, OperationTimeoutError, RuntimeExecutionError, ValidationError, XqueueError
+from xqueue_libs.domain.errors import ConflictError, NotFoundError, OperationTimeoutError, RuntimeExecutionError, ValidationError, XqueueError
 
 
 class ExitCode(IntEnum):

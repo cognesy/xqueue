@@ -6,14 +6,14 @@ from pathlib import Path
 
 import typer
 
-from apps.cli.output import Output, OutputFormat
-from apps.cli.runtime import run_action
-from libs.actions.workers import ListWorkersAction, SetWorkerStateAction
-from libs.domain.models import WorkerState
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.services.config import ConfigLoader
-from libs.services.database import SessionManager
-from libs.services.workers import WorkerService
+from xqueue_cli.output import Output, OutputFormat
+from xqueue_cli.runtime import run_action
+from xqueue_libs.actions.workers import ListWorkersAction, SetWorkerStateAction
+from xqueue_libs.domain.models import WorkerState
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.services.config import ConfigLoader
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.workers import WorkerService
 
 
 app = typer.Typer(help="Inspect and control persisted worker state.")

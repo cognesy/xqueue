@@ -5,12 +5,12 @@ from pathlib import Path
 
 from sqlalchemy import select
 
-from libs.actions.operations import CleanupRetentionAction
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.infra.models import AttemptModel, Base, EventModel, JobModel
-from libs.services.database import SessionManager
-from libs.services.job_logs import JobLogService
-from libs.services.retention import RetentionCleanupService
+from xqueue_libs.actions.operations import CleanupRetentionAction
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.infra.models import AttemptModel, Base, EventModel, JobModel
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.job_logs import JobLogService
+from xqueue_libs.services.retention import RetentionCleanupService
 
 
 def test_cleanup_retention_action_prunes_only_old_terminal_log_artifacts(tmp_path: Path) -> None:

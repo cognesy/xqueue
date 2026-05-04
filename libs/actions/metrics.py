@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from libs.domain.models import RuntimeMetricsResetView, RuntimeMetricsView
-from libs.domain.responses import DetailResponse, MutationResponse
-from libs.services.metrics import MetricsService
+from xqueue_libs.domain.models import RuntimeMetricsResetView, RuntimeMetricsView
+from xqueue_libs.domain.responses import DetailResponse, MutationResponse
+from xqueue_libs.services.metrics import MetricsService
 
 
 class ShowMetricsAction:

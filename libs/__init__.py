@@ -1,1 +1,1 @@
-"""Shared importable libraries for xqueue."""
+"""Shared xqueue library package."""

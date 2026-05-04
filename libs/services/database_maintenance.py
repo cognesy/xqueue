@@ -6,7 +6,7 @@ from pathlib import Path
 
 from sqlalchemy import Engine, inspect
 
-from libs.domain.models import DatabaseCheckResult, DatabaseVacuumResult, HealthStatus
+from xqueue_libs.domain.models import DatabaseCheckResult, DatabaseVacuumResult, HealthStatus
 
 
 REQUIRED_TABLES = ("attempts", "events", "jobs", "queues", "workers")

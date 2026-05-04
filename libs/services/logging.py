@@ -5,12 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 import logging
 import os
-from pathlib import Path
 import sys
 from typing import Any
 
 import structlog
 import yaml
+
+from xqueue_libs.services.resources import resource_file
 
 LOG_LEVEL_ENV = "XQUEUE_LOG_LEVEL"
 LOG_FORMAT_ENV = "XQUEUE_LOG_FORMAT"
@@ -58,16 +59,10 @@ class LoggingConfig:
 DEFAULT_LOGGING_CONFIG = LoggingConfig()
 
 
-def project_root() -> Path:
-    """Return the repository root for checked-in resources."""
+def default_logging_config_path():
+    """Return the packaged default logging config resource."""
 
-    return Path(__file__).resolve().parents[2]
-
-
-def default_logging_config_path() -> Path:
-    """Return the checked-in default logging config path."""
-
-    return project_root() / "resources" / "logging" / "default.yaml"
+    return resource_file("logging", "default.yaml")
 
 
 def load_logging_config(*, apply_env: bool = True) -> LoggingConfig:

@@ -6,10 +6,10 @@ from pathlib import Path
 from sqlalchemy import text
 from typer.testing import CliRunner
 
-from apps.cli.exit_codes import ExitCode
-from apps.cli.main import app
-from libs.infra.database import create_sqlite_engine
-from libs.infra.models import Base
+from xqueue_cli.exit_codes import ExitCode
+from xqueue_cli.main import app
+from xqueue_libs.infra.database import create_sqlite_engine
+from xqueue_libs.infra.models import Base
 
 
 runner = CliRunner()

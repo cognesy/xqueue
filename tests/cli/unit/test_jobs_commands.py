@@ -6,11 +6,11 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from apps.cli.exit_codes import ExitCode
-from apps.cli.main import app
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.infra.models import AttemptModel, Base, JobModel, WorkerModel
-from libs.services.database import SessionManager
+from xqueue_cli.exit_codes import ExitCode
+from xqueue_cli.main import app
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.infra.models import AttemptModel, Base, JobModel, WorkerModel
+from xqueue_libs.services.database import SessionManager
 
 
 runner = CliRunner()

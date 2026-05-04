@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import Session, selectinload
 
-from libs.domain.models import JobPruneResult, JobPruneSummary, JobState
-from libs.infra.models import AttemptModel, EventModel, JobModel
+from xqueue_libs.domain.models import JobPruneResult, JobPruneSummary, JobState
+from xqueue_libs.infra.models import JobModel
 
 
 TERMINAL_JOB_STATES = (

@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from libs.services.cli_bootstrap import xqueue_repo_root
-from libs.services.systemd import CommandResult, SystemdUserService
+from xqueue_libs.services.systemd import CommandResult, SystemdUserService
 
 
 def test_systemd_service_renders_expected_owned_unit(tmp_path: Path) -> None:
@@ -18,9 +17,7 @@ def test_systemd_service_renders_expected_owned_unit(tmp_path: Path) -> None:
     )
 
     assert "Description=xqueue controller (default)" in rendered
-    assert "ExecStart=/tmp/venv/bin/python -c" in rendered
-    assert "sys.path.insert" in rendered
-    assert str(xqueue_repo_root()) in rendered
+    assert "ExecStart=/tmp/venv/bin/python -m xqueue_cli" in rendered
     assert "controller run --controller-id default --workspace-instance" in rendered
     assert "Restart=on-failure" in rendered
     assert "StandardOutput=append:" in rendered

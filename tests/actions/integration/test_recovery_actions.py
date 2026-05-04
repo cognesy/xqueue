@@ -3,16 +3,16 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from libs.actions.operations import DoctorAction, HealthAction
-from libs.actions.recovery import RecoverStaleLeasesAction
-from libs.domain.models import JobState
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.infra.models import AttemptModel, Base, JobModel, QueueModel, WorkerModel
-from libs.services.database import SessionManager
-from libs.services.database_maintenance import DatabaseMaintenanceService
-from libs.services.health import HealthService
-from libs.services.jobs import JobService
-from libs.services.recovery import RECOVERY_ERROR, RecoveryService
+from xqueue_libs.actions.operations import DoctorAction, HealthAction
+from xqueue_libs.actions.recovery import RecoverStaleLeasesAction
+from xqueue_libs.domain.models import JobState
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.infra.models import AttemptModel, Base, JobModel, QueueModel, WorkerModel
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.database_maintenance import DatabaseMaintenanceService
+from xqueue_libs.services.health import HealthService
+from xqueue_libs.services.jobs import JobService
+from xqueue_libs.services.recovery import RECOVERY_ERROR, RecoveryService
 
 
 def test_recover_stale_leases_requeues_job_and_records_event(tmp_path: Path) -> None:

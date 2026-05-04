@@ -7,9 +7,9 @@ from datetime import datetime
 from sqlalchemy import case, delete, func, select
 from sqlalchemy.orm import Session
 
-from libs.domain.models import JobState, PurgeJobsResult, QueueState, QueueStatsView, QueueView
-from libs.infra.models import AttemptModel, EventModel, JobModel, QueueModel
-from libs.services.datetimes import ensure_utc
+from xqueue_libs.domain.models import JobState, PurgeJobsResult, QueueState, QueueStatsView, QueueView
+from xqueue_libs.infra.models import AttemptModel, EventModel, JobModel, QueueModel
+from xqueue_libs.services.datetimes import ensure_utc
 
 
 class QueueService:

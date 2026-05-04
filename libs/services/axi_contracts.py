@@ -6,8 +6,8 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel
 
-from libs.domain.config import EffectiveConfig
-from libs.domain.models import (
+from xqueue_libs.domain.config import EffectiveConfig
+from xqueue_libs.domain.models import (
     ControllerCommandResult,
     ControllerPoolConfigView,
     ControllerPoolMutationResult,
@@ -35,7 +35,7 @@ from libs.domain.models import (
     WorkerView,
     WorkspaceInstanceResetResult,
 )
-from libs.domain.responses import (
+from xqueue_libs.domain.responses import (
     DetailResponse,
     ErrorDetail,
     ErrorResponse,

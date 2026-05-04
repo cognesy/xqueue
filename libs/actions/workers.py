@@ -8,17 +8,17 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from time import sleep
 
-from libs.actions.logging import log_action
-from libs.domain.errors import RuntimeExecutionError
-from libs.domain.models import AttemptLogPaths, JobState, RegisterWorkerInput, ShellExecutionRequest, WorkerPollResult, WorkerState
-from libs.domain.responses import DetailResponse, ListResponse, MutationResponse
-from libs.services.attempts import AttemptService
-from libs.services.database import SessionManager
-from libs.services.execution import CommandExecutionService
-from libs.services.jobs import JobService
-from libs.services.metrics import MetricsService
-from libs.services.operation_logs import JobOperationLogService
-from libs.services.workers import WorkerService
+from xqueue_libs.actions.logging import log_action
+from xqueue_libs.domain.errors import RuntimeExecutionError
+from xqueue_libs.domain.models import AttemptLogPaths, JobState, RegisterWorkerInput, ShellExecutionRequest, WorkerPollResult, WorkerState
+from xqueue_libs.domain.responses import DetailResponse, ListResponse, MutationResponse
+from xqueue_libs.services.attempts import AttemptService
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.execution import CommandExecutionService
+from xqueue_libs.services.jobs import JobService
+from xqueue_libs.services.metrics import MetricsService
+from xqueue_libs.services.operation_logs import JobOperationLogService
+from xqueue_libs.services.workers import WorkerService
 
 
 def utc_now() -> datetime:

@@ -7,11 +7,11 @@ from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from libs.domain.models import DatabaseCheckResult, DoctorCheck, DoctorReport, HealthReport, HealthStatus, WorkerState, WorkerView
-from libs.infra.models import WorkerModel
-from libs.services.queues import QueueService
-from libs.services.recovery import RecoveryService
-from libs.services.workers import WorkerService
+from xqueue_libs.domain.models import DatabaseCheckResult, DoctorCheck, DoctorReport, HealthReport, HealthStatus, WorkerState, WorkerView
+from xqueue_libs.infra.models import WorkerModel
+from xqueue_libs.services.queues import QueueService
+from xqueue_libs.services.recovery import RecoveryService
+from xqueue_libs.services.workers import WorkerService
 
 
 class HealthService:

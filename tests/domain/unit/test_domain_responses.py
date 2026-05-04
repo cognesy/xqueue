@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from libs.domain.models import AttemptState, AttemptView, JobDetail, JobState, JobSummary, WorkerState, WorkerView
-from libs.domain.responses import DetailResponse, ErrorDetail, ErrorResponse, ListResponse, MutationResponse
+from xqueue_libs.domain.models import AttemptState, AttemptView, JobDetail, JobState, JobSummary, WorkerState, WorkerView
+from xqueue_libs.domain.responses import DetailResponse, ErrorDetail, ErrorResponse, ListResponse, MutationResponse
 
 
 def test_job_and_worker_enums_use_spec_vocabulary() -> None:

@@ -6,7 +6,7 @@ from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from libs.domain.models import JobState, QueueState, WorkerState
+from xqueue_libs.domain.models import JobState, QueueState, WorkerState
 
 
 T = TypeVar("T")

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from libs.services.config import ConfigLoader
+from xqueue_libs.services.config import ConfigLoader
 
 
 def test_load_without_file_returns_home_defaults(tmp_path: Path) -> None:

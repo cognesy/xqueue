@@ -5,12 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
-from libs.actions.logging import log_action
-from libs.domain.config import EffectiveConfig, RestartPolicy
-from libs.domain.models import ControllerState
-from libs.domain.responses import DetailResponse, ListResponse, MutationResponse
-from libs.services.config import ControllerPoolConfigService
-from libs.services.controller import ControllerService
+from xqueue_libs.actions.logging import log_action
+from xqueue_libs.domain.config import EffectiveConfig, RestartPolicy
+from xqueue_libs.domain.models import ControllerState
+from xqueue_libs.domain.responses import DetailResponse, ListResponse, MutationResponse
+from xqueue_libs.services.config import ControllerPoolConfigService
+from xqueue_libs.services.controller import ControllerService
 
 
 class RunControllerAction:

@@ -5,16 +5,16 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
-from libs.actions.logging import log_action
-from libs.domain.errors import ValidationError
-from libs.domain.config import RuntimePaths
-from libs.domain.responses import DetailResponse, MutationResponse
-from libs.services.database import SessionManager
-from libs.services.database_maintenance import DatabaseMaintenanceService
-from libs.services.health import HealthService
-from libs.services.job_logs import JobLogService
-from libs.services.retention import RetentionCleanupService
-from libs.services.workspace_instance import WorkspaceInstanceService
+from xqueue_libs.actions.logging import log_action
+from xqueue_libs.domain.errors import ValidationError
+from xqueue_libs.domain.config import RuntimePaths
+from xqueue_libs.domain.responses import DetailResponse, MutationResponse
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.database_maintenance import DatabaseMaintenanceService
+from xqueue_libs.services.health import HealthService
+from xqueue_libs.services.job_logs import JobLogService
+from xqueue_libs.services.retention import RetentionCleanupService
+from xqueue_libs.services.workspace_instance import WorkspaceInstanceService
 
 
 def utc_now() -> datetime:
@@ -152,9 +152,8 @@ class ResetWorkspaceInstanceAction:
 
     @log_action(
         "reset_workspace_instance",
-        context_getter=lambda self, paths, alembic_ini_path: {
+        context_getter=lambda self, paths: {
             "state_root": str(paths.state_root),
-            "alembic_ini_path": str(alembic_ini_path),
         },
         result_getter=lambda result: {
             "state_root": result.item.state_root,
@@ -162,8 +161,8 @@ class ResetWorkspaceInstanceAction:
             "recreated_path_count": len(result.item.recreated_paths),
         },
     )
-    def __call__(self, paths: RuntimePaths, *, alembic_ini_path) -> MutationResponse:
-        return MutationResponse(item=self._workspace_instance_service.reset(paths=paths, alembic_ini_path=alembic_ini_path))
+    def __call__(self, paths: RuntimePaths) -> MutationResponse:
+        return MutationResponse(item=self._workspace_instance_service.reset(paths=paths))
 
 
 class CleanupRetentionAction:

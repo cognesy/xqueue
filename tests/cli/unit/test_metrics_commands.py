@@ -4,8 +4,8 @@ import json
 
 from typer.testing import CliRunner
 
-from apps.cli.main import app
-from libs.services.metrics import MetricsService
+from xqueue_cli.main import app
+from xqueue_libs.services.metrics import MetricsService
 
 
 def test_metrics_show_and_reset_use_xqueue_home(tmp_path, monkeypatch) -> None:

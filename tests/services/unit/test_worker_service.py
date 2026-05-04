@@ -3,12 +3,12 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from libs.domain.models import WorkerState
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.infra.models import Base, JobModel, WorkerModel
-from libs.services.database import SessionManager
-from libs.services.datetimes import ensure_utc
-from libs.services.workers import WorkerService
+from xqueue_libs.domain.models import WorkerState
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.infra.models import Base, JobModel, WorkerModel
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.datetimes import ensure_utc
+from xqueue_libs.services.workers import WorkerService
 
 
 def test_renew_job_lease_updates_running_job_owned_by_worker(tmp_path: Path) -> None:

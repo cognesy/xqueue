@@ -8,8 +8,8 @@ from pathlib import Path
 from sqlalchemy import Select, asc, desc, select
 from sqlalchemy.orm import Session, selectinload
 
-from libs.domain.errors import ConflictError, NotFoundError
-from libs.domain.models import (
+from xqueue_libs.domain.errors import ConflictError, NotFoundError
+from xqueue_libs.domain.models import (
     AttemptLogStream,
     AttemptState,
     AttemptView,
@@ -23,8 +23,8 @@ from libs.domain.models import (
     JobState,
     JobSummary,
 )
-from libs.infra.models import AttemptModel, EventModel, JobModel
-from libs.services.datetimes import ensure_utc
+from xqueue_libs.infra.models import AttemptModel, EventModel, JobModel
+from xqueue_libs.services.datetimes import ensure_utc
 
 
 class JobService:

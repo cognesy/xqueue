@@ -5,14 +5,14 @@ from pathlib import Path
 
 from sqlalchemy import text
 
-from libs.actions.workers import ListWorkersAction, RegisterWorkerAction, RunWorkerAction, SetWorkerStateAction
-from libs.domain.models import RegisterWorkerInput, WorkerState
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.infra.models import Base, JobModel
-from libs.services.database import SessionManager
-from libs.services.jobs import JobService
-from libs.services.queues import QueueService
-from libs.services.workers import WorkerService
+from xqueue_libs.actions.workers import ListWorkersAction, RegisterWorkerAction, RunWorkerAction, SetWorkerStateAction
+from xqueue_libs.domain.models import RegisterWorkerInput, WorkerState
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.infra.models import Base, JobModel
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.jobs import JobService
+from xqueue_libs.services.queues import QueueService
+from xqueue_libs.services.workers import WorkerService
 
 
 def test_worker_control_actions_list_and_change_states(tmp_path: Path) -> None:

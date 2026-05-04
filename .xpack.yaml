@@ -1,0 +1,20 @@
+expected_scripts:
+  - xq
+
+smoke_commands:
+  - name: xq
+    args: ["--help"]
+    env:
+      XQUEUE_HOME: "{home}/xqueue"
+  - name: xq
+    args: ["health", "--output", "json"]
+    env:
+      XQUEUE_HOME: "{home}/xqueue"
+  - name: xq
+    args: ["doctor", "--output", "json"]
+    env:
+      XQUEUE_HOME: "{home}/xqueue"
+  - name: xq
+    args: ["config", "show", "--output", "json"]
+    env:
+      XQUEUE_HOME: "{home}/xqueue"

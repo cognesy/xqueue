@@ -5,9 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TypeVar
 
-from apps.cli.exit_codes import map_error_to_exit_code
-from apps.cli.output import Output
-from libs.domain.errors import XqueueError
+from xqueue_cli.exit_codes import map_error_to_exit_code
+from xqueue_cli.output import Output
+from xqueue_libs.domain.errors import XqueueError
 
 
 T = TypeVar("T")

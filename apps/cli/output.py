@@ -13,10 +13,10 @@ from pydantic import BaseModel
 from rich.console import Console
 from rich.pretty import Pretty
 
-from libs.services.axi_contracts import get_command_contract, parse_fields_csv, validate_requested_fields
-from libs.domain.responses import ErrorDetail, ErrorResponse, PayloadConvertible
-from libs.services.tmux_renderer import render_tmux
-from libs.services.toon_renderer import render_toon
+from xqueue_libs.services.axi_contracts import get_command_contract, parse_fields_csv, validate_requested_fields
+from xqueue_libs.domain.responses import ErrorDetail, ErrorResponse, PayloadConvertible
+from xqueue_libs.services.tmux_renderer import render_tmux
+from xqueue_libs.services.toon_renderer import render_toon
 
 
 class OutputFormat(StrEnum):

@@ -7,15 +7,15 @@ from pathlib import Path
 
 import typer
 
-from apps.cli.output import Output, OutputFormat
-from apps.cli.runtime import run_action
-from libs.actions.jobs import EnqueueJobAction
-from libs.domain.errors import ValidationError
-from libs.domain.models import EnqueueJobInput
-from libs.infra.database import create_session_factory, create_sqlite_engine
-from libs.services.config import ConfigLoader
-from libs.services.database import SessionManager
-from libs.services.jobs import JobService
+from xqueue_cli.output import Output, OutputFormat
+from xqueue_cli.runtime import run_action
+from xqueue_libs.actions.jobs import EnqueueJobAction
+from xqueue_libs.domain.errors import ValidationError
+from xqueue_libs.domain.models import EnqueueJobInput
+from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
+from xqueue_libs.services.config import ConfigLoader
+from xqueue_libs.services.database import SessionManager
+from xqueue_libs.services.jobs import JobService
 
 
 def _parse_env_items(items: list[str]) -> dict[str, str] | None:

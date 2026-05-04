@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from libs.services.job_logs import JobLogService
+from xqueue_libs.services.job_logs import JobLogService
 
 
 def test_tail_returns_last_lines_and_truncation_flag(tmp_path: Path) -> None:
