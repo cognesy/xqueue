@@ -1,0 +1,61 @@
+# Normalize text files consistently across platforms.
+* text=auto eol=lf
+
+# Source, docs, and configuration.
+*.py text eol=lf diff=python
+*.md text eol=lf diff=markdown
+*.rst text eol=lf
+*.txt text eol=lf
+*.toml text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.jsonl text eol=lf
+*.lock text eol=lf
+*.sql text eol=lf
+*.sh text eol=lf
+*.zsh text eol=lf
+*.bash text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+Dockerfile text eol=lf
+Makefile text eol=lf
+
+# Windows scripts, if added later, should keep CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary assets, archives, and local databases.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.tar binary
+*.tgz binary
+*.bz2 binary
+*.7z binary
+*.whl binary
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+*.p12 binary
+*.pfx binary
+
+# Keep repo archives focused on source, docs, and versioned examples.
+.beads/ export-ignore
+.dolt/ export-ignore
+.venv/ export-ignore
+.pytest_cache/ export-ignore
+.ruff_cache/ export-ignore
+.mypy_cache/ export-ignore
+.tox/ export-ignore
+.nox/ export-ignore
+htmlcov/ export-ignore
+build/ export-ignore
+dist/ export-ignore
