@@ -1,0 +1,54 @@
+schema_version: 1
+id: embed-without-the-cli
+title: Embed the queue in Python without installing the CLI
+capability: interfaces
+status: implemented
+narrative:
+  as_a: embedder
+  i_want: a typed, lifecycle-safe Python API that returns domain values
+  so_that: a program can own a queue directly instead of shelling out to xq
+expected_behavior:
+- scenario: A program opens and uses the client
+  given:
+  - the base distribution installed without the cli extra
+  when: the program opens Xqueue as a context manager and uses a capability facet
+  then:
+  - typed capability models are returned, not CLI envelopes
+  - SQLite resources are disposed when the context exits
+  - importing the library does not import Typer or Rich
+- scenario: The client is used after closing
+  given:
+  - a client whose context has exited
+  when: the program calls a facet
+  then:
+  - a closed-client error is raised rather than undefined behavior
+- scenario: Both channels are compared
+  given:
+  - the same workspace, overlay, and overrides given to each channel
+  when: the SDK reads configuration and the CLI shows it
+  then:
+  - both produce the same effective settings
+acceptance_criteria:
+- close is idempotent and no long-lived session is held on the client.
+- Capability properties return stable, cached facets.
+- SDK errors carry no exit codes or rendered messages.
+priority: high
+source_refs:
+- type: code
+  path: libs/client.py
+- type: docs
+  path: README.md
+  section: Python SDK
+  line: 83
+interfaces:
+  api:
+  - Xqueue.open
+  - Xqueue.jobs
+  - Xqueue.workspace.config
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user

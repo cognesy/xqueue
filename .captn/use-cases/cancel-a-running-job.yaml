@@ -1,0 +1,51 @@
+schema_version: 1
+id: cancel-a-running-job
+title: Cancel a job, cooperatively if it is already running
+capability: jobs
+status: implemented
+narrative:
+  as_a: operator
+  i_want: to stop a job and everything it spawned
+  so_that: a runaway or no-longer-wanted command releases the machine
+expected_behavior:
+- scenario: A queued job is canceled
+  given:
+  - a job in the queued state
+  when: the operator cancels it
+  then:
+  - the job moves to canceled immediately
+  - it is never claimed by a worker
+- scenario: A running job is canceled
+  given:
+  - a job currently executing under a worker
+  when: the operator cancels it
+  then:
+  - the request is recorded rather than applied instantly
+  - the worker sends SIGTERM to the whole process group
+  - the worker waits the configured grace period
+  - the worker escalates to SIGKILL if the group has not exited
+acceptance_criteria:
+- Cancellation reaches grandchild processes, not only the immediate child.
+- The outcome is recorded in attempt history with its terminal event.
+- A canceled job can still be retried without losing its history.
+priority: high
+source_refs:
+- type: docs
+  path: docs/user/operations.md
+  section: Cancel, Retry, Delete, And Purge
+  line: 219
+interfaces:
+  cli:
+  - xq jobs cancel <id>
+  - xq jobs retry <id>
+  api:
+  - Xqueue.jobs.cancel
+edge_cases:
+- A job that finishes on its own during the grace period is not reported as canceled.
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user

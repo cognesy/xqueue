@@ -1,0 +1,58 @@
+schema_version: 1
+id: maintenance
+title: Maintenance
+status: implemented
+summary: 'The operator''s diagnostic and repair surface: health, doctor, stale-lease
+  recovery, database check and vacuum, retention cleanup, and metrics.'
+user_value: When something looks wrong, one command says what is wrong, and another
+  fixes the specific failure mode -- notably a job stuck running because its worker
+  died.
+scope_boundary:
+  includes:
+  - High-level health and detailed doctor diagnostics across capabilities.
+  - Stale-lease recovery, requeueing or failing per the retry policy.
+  - Database integrity check and vacuum.
+  - Explicit, operator-invoked retention cleanup of old history and logs.
+  - Metrics and the compact home read model.
+  excludes:
+  - Automatic background pruning; cleanup only runs when asked.
+  - Primary job state transitions, which belong to jobs and workers.
+  - Repairing state xqueue does not own.
+  assumptions:
+  - Stale-lease recovery is central to the at-least-once reliability model.
+  - Maintenance may coordinate lower capabilities through their public ports but owns
+    no transition that belongs to one of them.
+source_refs:
+- type: spec
+  path: SPEC.md
+  section: Delivery semantics
+  line: 847
+- type: code
+  path: libs/maintenance/api.py
+- type: docs
+  path: docs/user/operations.md
+  section: Health, Recovery, And Maintenance
+  line: 352
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user
+- at: '2026-08-04'
+  change: created
+  reason: Initial capability model reconstructed from SPEC.md, AGENTS.md, and libs/maintenance
+use_cases:
+- id: diagnose-the-instance
+  status: implemented
+- id: prune-old-history
+  status: implemented
+- id: recover-stale-leases
+  status: implemented

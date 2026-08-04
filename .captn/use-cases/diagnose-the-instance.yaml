@@ -1,0 +1,46 @@
+schema_version: 1
+id: diagnose-the-instance
+title: Diagnose an instance with health and doctor
+capability: maintenance
+status: implemented
+narrative:
+  as_a: operator
+  i_want: one command that says whether this instance is healthy and why not
+  so_that: troubleshooting starts from evidence instead of guesswork
+expected_behavior:
+- scenario: A stuck job is investigated
+  given:
+  - a job that has appeared to be running for longer than expected
+  when: the operator runs health and then doctor
+  then:
+  - health returns a high-level verdict
+  - doctor returns detailed per-check diagnostics across capabilities
+  - a stale worker heartbeat is identifiable from the output
+- scenario: Database integrity is checked
+  given:
+  - an initialized workspace database
+  when: the operator runs the database check
+  then:
+  - integrity is reported without mutating queue state
+acceptance_criteria:
+- Diagnostics are read-only; repair is a separate, explicitly invoked command.
+- Output is available as a structured envelope for agent consumption.
+priority: high
+source_refs:
+- type: docs
+  path: docs/user/operations.md
+  section: Troubleshooting
+  line: 399
+interfaces:
+  cli:
+  - xq health
+  - xq doctor
+  - xq db check
+  - xq db vacuum
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user

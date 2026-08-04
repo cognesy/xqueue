@@ -1,0 +1,46 @@
+schema_version: 1
+id: drain-a-worker
+title: Pause, drain, or stop an individual worker
+capability: workers
+status: implemented
+narrative:
+  as_a: operator
+  i_want: to take one worker out of service without killing what it is running
+  so_that: I can shrink capacity or retire a process safely
+expected_behavior:
+- scenario: A worker is drained
+  given:
+  - a worker currently executing a job
+  when: the operator drains it
+  then:
+  - the worker claims no further jobs
+  - the in-flight job is allowed to finish
+  - the worker reports the draining state
+- scenario: Worker state is inspected
+  given:
+  - several registered workers
+  when: the operator lists workers
+  then:
+  - each worker is returned with one of active, paused, draining, or stopped
+acceptance_criteria:
+- Worker states are separate from job states and never conflated in output.
+- Draining is graceful; stopping is the abrupt counterpart.
+priority: medium
+source_refs:
+- type: docs
+  path: docs/user/operations.md
+  section: Queue And Worker Controls
+  line: 254
+interfaces:
+  cli:
+  - xq workers list
+  - xq workers pause <id>
+  - xq workers drain <id>
+  - xq workers stop <id>
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user

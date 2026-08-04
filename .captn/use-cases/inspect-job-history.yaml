@@ -1,0 +1,62 @@
+schema_version: 1
+id: inspect-job-history
+title: Inspect a job and read what its attempts produced
+capability: jobs
+status: implemented
+narrative:
+  as_a: operator
+  i_want: to see a job's current state, attempt history, and captured output
+  so_that: I can tell what happened without re-running the command
+expected_behavior:
+- scenario: A finished job is inspected
+  given:
+  - a job that has run at least one attempt
+  when: the operator shows the job
+  then:
+  - current state, assigned worker, and timeout or cancellation metadata are returned
+  - each attempt is listed with its exit code
+  - each attempt carries stdout, stderr, and event log file paths
+- scenario: Attempt output is tailed
+  given:
+  - an attempt with captured output on disk
+  when: the operator tails a chosen stream and attempt number
+  then:
+  - the requested number of trailing lines is returned
+  - the default is the latest attempt's stderr
+- scenario: Jobs are filtered and sorted
+  given:
+  - jobs across several queues and states
+  when: the operator lists with queue, state, and time-window filters
+  then:
+  - only matching jobs are returned
+  - the requested sort order is applied
+acceptance_criteria:
+- Raw command output stays in per-attempt files and is never mixed into structured
+  stdout.
+- Lifecycle events are readable as JSONL beside the raw logs.
+- Job detail is the single inspection surface; no other command is needed to find
+  log paths.
+priority: critical
+source_refs:
+- type: docs
+  path: docs/user/operations.md
+  section: Inspect Jobs
+  line: 169
+interfaces:
+  cli:
+  - xq jobs list
+  - xq jobs show <id>
+  - xq jobs tail <id>
+  api:
+  - Xqueue.jobs.show
+  - Xqueue.jobs.list
+  files:
+  - logs/jobs/<job-id>/attempt-NNNN.stdout.log
+  - logs/jobs/<job-id>/attempt-NNNN.events.jsonl
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user

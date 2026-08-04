@@ -50,6 +50,7 @@ def test_running_init_twice_changes_nothing(tmp_path: Path) -> None:
         str(directory / "logs"),
         str(marker_path(directory)),
         str(directory / "config.yaml"),
+        str(directory / "xqueue.db"),
     }
     assert (directory / "config.yaml").read_text() == "queue:\n  default_queue: mine\n"
     assert read_marker(directory) == before
@@ -113,3 +114,43 @@ def test_init_leaves_no_temporary_files_behind(tmp_path: Path) -> None:
     directory = tmp_path / WORKSPACE_DIR
 
     assert not any(p.name.endswith(".tmp") for p in directory.iterdir())
+
+
+def test_init_leaves_a_database_an_operator_can_enqueue_into(tmp_path: Path) -> None:
+    """The gap this closes: `init` reported success, then `enqueue` failed with
+    "no such table: jobs" because nothing on the init path ran migrations."""
+    from sqlalchemy import create_engine, inspect
+
+    result = initialize(tmp_path)
+
+    database_path = tmp_path / WORKSPACE_DIR / "xqueue.db"
+    assert database_path.exists()
+    assert str(database_path) in result.created_paths
+
+    tables = set(inspect(create_engine(f"sqlite:///{database_path}")).get_table_names())
+    assert {"jobs", "queues", "workers", "attempts", "events"} <= tables
+
+
+def test_init_twice_keeps_the_database_it_already_made(tmp_path: Path) -> None:
+    """Migrating to head is idempotent, so the second run retains rather than recreates."""
+    initialize(tmp_path)
+    database_path = tmp_path / WORKSPACE_DIR / "xqueue.db"
+    stamped = database_path.read_bytes()
+
+    result = initialize(tmp_path)
+
+    assert str(database_path) in result.retained_paths
+    assert str(database_path) not in result.created_paths
+    assert database_path.read_bytes() == stamped
+
+
+def test_a_file_that_is_not_a_database_is_reported_not_migrated(tmp_path: Path) -> None:
+    """Same rule as the directory case: report it, never delete the operator's file."""
+    initialize(tmp_path)
+    database_path = tmp_path / WORKSPACE_DIR / "xqueue.db"
+    database_path.write_text("definitely not sqlite")
+
+    result = initialize(tmp_path)
+
+    assert str(database_path) in result.conflicting_paths
+    assert database_path.read_text() == "definitely not sqlite"

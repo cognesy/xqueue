@@ -1,0 +1,73 @@
+schema_version: 1
+id: interfaces
+title: Operator and agent interfaces
+status: implemented
+summary: The two channels the capabilities are reached through -- the xq CLI and the
+  Python SDK -- and the output, envelope, and exit-code contract that makes the CLI
+  usable as an API.
+user_value: Automation can drive xqueue through a stable machine-readable contract
+  instead of scraping prose, and a Python program can own a queue directly without
+  shelling out or installing the CLI stack.
+scope_boundary:
+  includes:
+  - Output modes toon, json, jsonl, text, and tmux, with toon as the default.
+  - Stable envelopes for lists, details, mutations, and failures.
+  - stdout as the payload and stderr as structured structlog output.
+  - Exit codes distinguishing usage, configuration, and runtime failure.
+  - Field selection and the compact agent-facing rendering.
+  - A version flag answered before the CLI stack is imported, so an install can be
+    identified even when it is incomplete.
+  - The Xqueue SDK facade and its cached capability facets.
+  - Keeping both channels resolving configuration through one loader.
+  excludes:
+  - Any network, HTTP, or web interface; a UI is a recorded non-goal.
+  - Business decisions; channels project results, they do not compute them.
+  - Rich formatting anywhere but the text output mode.
+  assumptions:
+  - The CLI is the main interface, not a thin wrapper over a library.
+  - The SDK returns domain values, never CLI envelopes.
+  - Importing xqueue does not import Typer or Rich; the CLI is an extra.
+  - The CLI must not import click, because Typer vendors it.
+source_refs:
+- type: docs
+  path: AGENTS.md
+  section: CLI Contract
+  line: 129
+- type: docs
+  path: docs/dev/channel-parity.md
+- type: docs
+  path: docs/user/operations.md
+  section: Output Modes And Logs
+  line: 56
+- type: code
+  path: libs/client.py
+notes:
+- Modeled as a capability because the agent audience's value is delivered here, not
+  by any single runtime capability; the plane map and channel parity matrix are its
+  evidence.
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: changed
+  reason: --version is answered by a stdlib-only module before Typer is imported
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: xq --version added so an install can be verified without the cli extra
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user
+- at: '2026-08-04'
+  change: created
+  reason: Initial capability model reconstructed from SPEC.md, AGENTS.md, and libs/interfaces
+use_cases:
+- id: embed-without-the-cli
+  status: implemented
+- id: structured-output-contract
+  status: implemented
+- id: verify-the-install
+  status: implemented

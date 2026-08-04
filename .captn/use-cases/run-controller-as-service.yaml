@@ -1,0 +1,50 @@
+schema_version: 1
+id: run-controller-as-service
+title: Install the controller as an OS-managed service
+capability: controller
+status: implemented
+narrative:
+  as_a: operator
+  i_want: the controller to be started and restarted by the operating system
+  so_that: queued work keeps being executed across logout and reboot
+expected_behavior:
+- scenario: The controller is installed under launchd or systemd --user
+  given:
+  - a supported platform and a resolved workspace
+  when: the operator installs and starts the managed service
+  then:
+  - a service artifact owned by xqueue is written under its own naming convention
+  - status reports the owned artifact path and the running state
+- scenario: The controller is uninstalled
+  given:
+  - a managed service previously installed by xq
+  when: the operator uninstalls it
+  then:
+  - only the artifact xqueue owns is removed
+acceptance_criteria:
+- xq modifies only service definitions it owns.
+- Unsupported init systems are declined rather than partially handled.
+- Managed mode and direct mode expose the same control verbs.
+priority: medium
+source_refs:
+- type: spec
+  path: SPEC.md
+  section: Ownership Model
+  line: 561
+- type: spec
+  path: SPEC.md
+  section: Explicit non-goals for v1 platform integration
+  line: 549
+interfaces:
+  cli:
+  - xq controller install --platform launchd
+  - xq controller status --platform launchd
+edge_cases:
+- A service artifact present but not owned by xqueue is left untouched.
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user

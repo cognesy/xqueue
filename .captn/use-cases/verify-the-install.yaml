@@ -1,0 +1,65 @@
+schema_version: 1
+id: verify-the-install
+title: Confirm which xqueue build is on PATH
+capability: interfaces
+status: implemented
+narrative:
+  as_a: operator
+  i_want: one command that names the installed version and cannot fail
+  so_that: I can tell a stale install from a broken one before debugging anything
+    else
+expected_behavior:
+- scenario: A complete install is checked
+  given:
+  - xqueue installed with the cli extra
+  when: the operator asks for the version
+  then:
+  - a single line naming the command and the distribution version is printed on stdout
+  - the exit code is zero
+  - no configuration is composed and no workspace is resolved first
+- scenario: The cli extra is missing
+  given:
+  - xqueue installed without Typer, Rich, or python-toon
+  when: the operator asks for the version
+  then:
+  - the version is still printed, because the entrypoint answers before importing
+    the CLI
+  - every other command still explains that the cli extra is required
+- scenario: A queued command carries its own version flag
+  given:
+  - an operator enqueueing a third-party tool that takes a version flag
+  when: that flag appears after the command separator
+  then:
+  - the job is enqueued unchanged
+  - xqueue does not print its own version instead
+acceptance_criteria:
+- The flag is answered by a module that imports only the standard library.
+- Only the bare invocation bypasses Typer; every other form is handled as a normal
+  eager option.
+- The version comes from installed distribution metadata, not a hardcoded constant.
+- An uninstalled source tree reports a placeholder rather than raising.
+priority: high
+source_refs:
+- type: code
+  path: apps/cli/version.py
+- type: code
+  path: apps/cli/entry.py
+- type: tests
+  path: tests/cli/unit/test_entry.py
+interfaces:
+  cli:
+  - xq --version
+edge_cases:
+- The source tree is on sys.path without being installed, so distribution metadata
+  is absent.
+- A queued command's own version flag must reach the queue rather than the CLI.
+related_tests:
+- tests/cli/unit/test_entry.py
+- tests/cli/unit/test_cli_help.py
+provenance:
+  mode: authored
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: xq --version added so an install can be verified without the cli extra

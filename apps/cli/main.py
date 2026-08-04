@@ -25,6 +25,7 @@ from xqueue_cli.commands.workspace import app as workspace_app
 from xqueue_cli.errors import XqueueGroup
 from xqueue_cli.home import build_home_response
 from xqueue_cli.output import Output, OutputFormat
+from xqueue_cli.version import version_line
 
 app = typer.Typer(
     name="xq",
@@ -48,9 +49,28 @@ register_health(app)
 register_doctor(app)
 
 
+def _print_version(value: bool) -> None:
+    """Answer `--version` before anything that can fail has run.
+
+    Eager, so it precedes configuration composition and logging setup: the flag
+    reports which build is installed, and it must stay true on a machine whose
+    config does not compose. That is the case where it is most worth having.
+    """
+    if value:
+        typer.echo(version_line())
+        raise typer.Exit()
+
+
 @app.callback()
 def callback(
     ctx: typer.Context,
+    version: bool = typer.Option(
+        False,
+        "--version",
+        callback=_print_version,
+        is_eager=True,
+        help="Print the installed xqueue version and exit.",
+    ),
     output: OutputFormat = typer.Option(OutputFormat.TOON, "--output", "-o"),
     fields: str | None = typer.Option(None, "--fields"),
     full: bool = typer.Option(False, "--full"),

@@ -26,8 +26,27 @@ CLI_MODULES = frozenset({"rich", "toon", "typer"})
 HINT = 'xq requires the cli extra: pip install "xqueue[cli]"'
 
 
+def _is_version_request(argv: list[str]) -> bool:
+    """True when the whole invocation is `xq --version`.
+
+    Deliberately the strictest possible test. `--version` is also a real Typer
+    option below, so anything more elaborate is still answered; this branch
+    exists only so the bare form works when Typer is absent.
+
+    Matching `--version` anywhere would be a bug: `xq enqueue -- mytool
+    --version` is an operator queueing someone else's version flag, and it must
+    reach the queue rather than printing ours.
+    """
+    return argv == ["--version"]
+
+
 def main() -> None:
     """Run the CLI, or explain why it cannot run."""
+    if _is_version_request(sys.argv[1:]):
+        from xqueue_cli.version import version_line
+
+        print(version_line())
+        return
     try:
         from xqueue_cli.main import main as run_cli
     except ModuleNotFoundError as exc:

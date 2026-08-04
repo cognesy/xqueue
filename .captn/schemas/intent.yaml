@@ -1,0 +1,135 @@
+type: object
+additionalProperties: false
+required: [schema_version, name, headline, purpose, problems, audiences, goals, non_goals]
+x-captn-orientation:
+  # Read-only orientation metadata. It does not change the Intent record contract.
+  # Projects may deliberately extend their local schema copy with additional aliases.
+  intent_fields:
+    headline: {headings: [Headline, Summary]}
+    purpose: {headings: [Purpose, Mission, Vision]}
+    problems: {headings: [Problems, Pain points, Why it matters]}
+    audiences: {headings: [Audiences, Who this is for]}
+    goals: {headings: [Goals, What success looks like, Success criteria]}
+    non_goals: {headings: [Non-goals, Out of scope]}
+  capability_sections: [In scope, Capabilities, Pipeline, Stages]
+properties:
+  schema_version: {type: integer, enum: [1]}
+  name: {type: string, pattern: "^[a-z0-9][a-z0-9-]*$"}
+  headline: {type: string, minLength: 1}
+  purpose: {type: string, minLength: 1}
+  guiding_metaphor:
+    type: object
+    additionalProperties: false
+    required: [metaphor, boundary]
+    properties:
+      metaphor: {type: string, minLength: 1}
+      boundary: {type: string, minLength: 1}
+  context:
+    type: object
+    additionalProperties: false
+    required: [environment]
+    properties:
+      environment: {type: string, minLength: 1}
+      assumptions: {type: array, items: {type: string, minLength: 1}}
+  problems:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required: [id, statement, impact, felt_by]
+      properties:
+        id: {type: string, pattern: "^[a-z0-9][a-z0-9-]*$"}
+        statement: {type: string, minLength: 1}
+        impact: {type: string, minLength: 1}
+        felt_by: {type: array, minItems: 1, items: {type: string, pattern: "^[a-z0-9][a-z0-9-]*$"}}
+  audiences:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required: [id, kind, name, needs]
+      properties:
+        id: {type: string, pattern: "^[a-z0-9][a-z0-9-]*$"}
+        kind: {type: string, enum: [agent, human]}
+        name: {type: string, minLength: 1}
+        needs: {type: array, minItems: 1, items: {type: string, minLength: 1}}
+  goals:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required: [id, statement, success_measures]
+      properties:
+        id: {type: string, pattern: "^[a-z0-9][a-z0-9-]*$"}
+        statement: {type: string, minLength: 1}
+        success_measures: {type: array, minItems: 1, items: {type: string, minLength: 1}}
+  outcomes:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [audience, statement]
+      properties:
+        audience: {type: string, pattern: "^[a-z0-9][a-z0-9-]*$"}
+        statement: {type: string, minLength: 1}
+  non_goals:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required: [statement, rationale, route_to]
+      properties:
+        statement: {type: string, minLength: 1}
+        rationale: {type: string, minLength: 1}
+        route_to: {type: string, minLength: 1}
+  exclusions: {type: array, items: {type: string, minLength: 1}}
+  bets:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [id, statement, checked_by, verdict]
+      properties:
+        id: {type: string, pattern: "^[a-z0-9][a-z0-9-]*$"}
+        statement: {type: string, minLength: 1}
+        checked_by: {type: string, minLength: 1}
+        verdict: {type: string, enum: [open, confirmed, refuted]}
+  stakeholders: {type: array, items: {type: string, minLength: 1}}
+  provenance:
+    type: object
+    additionalProperties: false
+    required: [mode, confidence]
+    properties:
+      mode: {type: string, enum: [authored, reconstructed, mixed]}
+      confidence: {type: string, enum: [confirmed, inferred, speculative]}
+  source_refs:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [type, path]
+      properties:
+        type: {type: string, enum: [code, docs, spec, tests, issue, runtime]}
+        path: {type: string, minLength: 1}
+        section: {type: string}
+        command: {type: string}
+        symbol: {type: string}
+        line: {type: integer, minimum: 1}
+  open_questions: {type: array, items: {type: string, minLength: 1}}
+  notes: {type: array, items: {type: string, minLength: 1}}
+  changelog:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [at, change, reason]
+      properties:
+        at: {type: string, minLength: 1}
+        change: {type: string, minLength: 1}
+        reason: {type: string, minLength: 1}
+        by: {type: string}
+  custom: {type: object}

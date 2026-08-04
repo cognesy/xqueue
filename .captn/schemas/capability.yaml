@@ -1,0 +1,87 @@
+type: object
+additionalProperties: false
+required: [schema_version, id, title, status, summary, user_value, scope_boundary]
+properties:
+  schema_version: {type: integer, enum: [1]}
+  id: {type: string, pattern: "^[a-z0-9][a-z0-9-]*$"}
+  title: {type: string, minLength: 1}
+  status: {type: string, enum: [implemented, in_progress, planned, deprecated, retired]}
+  summary: {type: string, minLength: 1}
+  user_value: {type: string, minLength: 1}
+  scope_boundary:
+    type: object
+    additionalProperties: false
+    properties:
+      includes: {type: array, items: {type: string, minLength: 1}}
+      excludes: {type: array, items: {type: string, minLength: 1}}
+      assumptions: {type: array, items: {type: string, minLength: 1}}
+  use_cases:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [id]
+      properties:
+        id: {type: string, pattern: "^[a-z0-9][a-z0-9-]*$"}
+        status: {type: string, enum: [implemented, in_progress, planned, deprecated, retired]}
+  source_refs:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [type, path]
+      properties:
+        type: {type: string, enum: [code, docs, spec, tests, issue, runtime]}
+        path: {type: string, minLength: 1}
+        section: {type: string}
+        command: {type: string}
+        symbol: {type: string}
+        line: {type: integer, minimum: 1}
+  action_surface:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [kind, name]
+      properties:
+        kind: {type: string, enum: [cli_command, action_function, action_class, api_endpoint, ui_action, event_handler, background_job, file_operation, external_integration]}
+        name: {type: string, minLength: 1}
+        module: {type: string}
+        symbol: {type: string}
+        class: {type: string}
+        method: {type: string}
+        fq_name: {type: string}
+        command: {type: string}
+        route: {type: string}
+        path: {type: string}
+        confidence: {type: string, enum: [confirmed, inferred, speculative]}
+        refs: {type: array, items: {type: string, minLength: 1}}
+        notes: {type: array, items: {type: string, minLength: 1}}
+  planning:
+    type: object
+    additionalProperties: false
+    properties:
+      bd_epic: {type: string}
+      gaps: {type: array, items: {type: string, minLength: 1}}
+      risks: {type: array, items: {type: string, minLength: 1}}
+      next_steps: {type: array, items: {type: string, minLength: 1}}
+  notes: {type: array, items: {type: string, minLength: 1}}
+  provenance:
+    type: object
+    additionalProperties: false
+    required: [mode, confidence]
+    properties:
+      mode: {type: string, enum: [authored, reconstructed, mixed]}
+      confidence: {type: string, enum: [confirmed, inferred, speculative]}
+  changelog:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [at, change, reason]
+      properties:
+        at: {type: string, minLength: 1}
+        change: {type: string, minLength: 1}
+        reason: {type: string, minLength: 1}
+        by: {type: string}
+  custom: {type: object}

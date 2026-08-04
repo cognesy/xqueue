@@ -1,0 +1,63 @@
+schema_version: 1
+id: explain-effective-config
+title: Compose configuration in layers and explain the result
+capability: workspace
+status: implemented
+narrative:
+  as_a: operator
+  i_want: to see the effective settings and which layer decided each of them
+  so_that: an unexpected value can be traced instead of guessed at
+expected_behavior:
+- scenario: Settings are composed from several sources
+  given:
+  - packaged defaults, a workspace config file, an environment variable, and a --set
+    override
+  when: any command resolves configuration
+  then:
+  - later layers win over earlier ones in the recorded order
+  - --config replaces the packaged defaults rather than layering over them
+  - only environment variables containing a doubled underscore are treated as settings
+- scenario: The composition is inspected
+  given:
+  - a workspace with overlapping configuration sources
+  when: the operator shows the configuration
+  then:
+  - the effective values are returned
+  - a layers list reports which sources existed and which contributed
+- scenario: Configuration will not compose
+  given:
+  - an unparseable file, an unknown key, or an out-of-range value
+  when: any command starts
+  then:
+  - the command stops with an error envelope and exit code 2
+  - the failure occurs before the subcommand's own output mode is read
+acceptance_criteria:
+- Both the CLI and the SDK resolve through one loader and agree on the result.
+- Only the workspace loader imports the configuration library.
+- Workspace-choosing environment variables are never treated as settings.
+priority: critical
+source_refs:
+- type: code
+  path: libs/workspace/loader.py
+- type: docs
+  path: docs/user/operations.md
+  section: Configuration
+  line: 22
+interfaces:
+  cli:
+  - xq config show
+  - xq --config <file>
+  - xq --env <name>
+  - xq --set key=value
+  api:
+  - Xqueue.open(env_name=..., overrides=...)
+  - Xqueue.workspace.config()
+edge_cases:
+- A rejected --set must not leave a previous invocation's values standing.
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user

@@ -1,0 +1,49 @@
+schema_version: 1
+id: recover-stale-leases
+title: Recover jobs whose worker died mid-execution
+capability: maintenance
+status: implemented
+narrative:
+  as_a: operator
+  i_want: jobs abandoned by a dead worker to become runnable again
+  so_that: a crash does not silently strand work in the running state
+expected_behavior:
+- scenario: A worker dies while holding a job
+  given:
+  - a job claimed by a worker whose heartbeat has stopped
+  - a lease that has expired
+  when: the operator runs stale-lease recovery
+  then:
+  - the job is requeued or failed according to its retry policy
+  - the recovery outcome is recorded in the job's history
+acceptance_criteria:
+- Recovery is the mechanism that makes at-least-once delivery true rather than aspirational.
+- A job with attempts remaining is requeued; one without is failed.
+- Recovery never disturbs a job whose lease is still being renewed.
+priority: critical
+source_refs:
+- type: docs
+  path: docs/user/operations.md
+  section: Health, Recovery, And Maintenance
+  line: 352
+- type: spec
+  path: SPEC.md
+  section: Delivery semantics
+  line: 847
+interfaces:
+  cli:
+  - xq recover stale-leases
+  - xq health
+  - xq doctor
+  api:
+  - Xqueue.maintenance
+edge_cases:
+- A worker that recovers and heartbeats before the lease expires is not treated as
+  dead.
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user

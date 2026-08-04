@@ -242,6 +242,29 @@ so a clean checkout needs nothing but `uv sync --group dev`.
 `scripts/check_architecture.py` runs Semgrep itself through `uvx` and owns the
 ratchet allowances, so Semgrep is never invoked directly.
 
+## Intent Model Gate
+
+The `.captn/` corpus records what xqueue is for -- its mission, non-goals,
+capability map, and the behaviors under each capability. It is checked
+mechanically, because a model that has drifted from the code is worse than no
+model:
+
+```sh
+captn validate . --strict
+captn doctor .
+```
+
+`--strict` fails on warnings as well as errors, which is what keeps drift from
+accumulating quietly. `captn` is an installed `uv` tool rather than a project
+dependency, so this check sits outside the block above: a clean checkout can
+run every gate there without it.
+
+Run it whenever a change alters what the system does, not merely how it does
+it -- a new operator-visible behavior, a capability that moved status, or a
+boundary decision that changes the non-goals. Record the change with
+`captn usecase-change` or `capability-change` and a `--reason` rather than
+hand-editing a record, so the changelog stays a true account.
+
 The shared `xqa` workflow checks are separate, and need the sibling repository
 checked out at `../xqa`:
 

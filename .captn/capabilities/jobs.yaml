@@ -1,0 +1,61 @@
+schema_version: 1
+id: jobs
+title: Jobs
+status: implemented
+summary: 'The queued unit of work and everything an operator does to one: enqueue,
+  list, show, cancel, retry, delete, purge, and read its attempt output.'
+user_value: A shell command handed to xqueue is durable, addressable by id, and inspectable
+  afterwards -- including the stdout, stderr, and lifecycle events of every attempt
+  it took.
+scope_boundary:
+  includes:
+  - Enqueueing a command with queue, cwd, env, timeout, and attempt policy.
+  - Job state as an explicit lifecycle rather than an implicit flag.
+  - Attempt history, exit codes, and per-attempt log and event file paths.
+  - Filtered and sorted listing, single-job detail, and tailing attempt output.
+  - Cancel, retry, delete, and purge as operator-visible transitions.
+  excludes:
+  - Deciding when a job should be created; that is upstream of xqueue.
+  - Dependencies between jobs; DAG semantics are a recorded non-goal.
+  - Executing the command, which workers own.
+  assumptions:
+  - A job is one command string plus execution metadata, not a callable.
+  - Delivery is at-least-once, so a job may run more than once.
+source_refs:
+- type: spec
+  path: SPEC.md
+  section: Core Model
+  line: 97
+- type: docs
+  path: AGENTS.md
+  section: Core Model
+  line: 38
+- type: code
+  path: libs/jobs/api.py
+- type: docs
+  path: docs/user/operations.md
+  section: Inspect Jobs
+  line: 169
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user
+- at: '2026-08-04'
+  change: created
+  reason: Initial capability model reconstructed from SPEC.md and libs/jobs
+use_cases:
+- id: cancel-a-running-job
+  status: implemented
+- id: enqueue-a-command
+  status: implemented
+- id: inspect-job-history
+  status: implemented

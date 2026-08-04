@@ -1,0 +1,49 @@
+schema_version: 1
+id: supervise-worker-pools
+title: Configure and supervise worker pools from one controller
+capability: controller
+status: implemented
+narrative:
+  as_a: operator
+  i_want: to declare worker pools once and have a controller keep them running
+  so_that: capacity is a configuration decision rather than a set of remembered commands
+expected_behavior:
+- scenario: A pool is defined and the controller runs it
+  given:
+  - a workspace configuration with no pool for a queue
+  when: the operator ensures a pool naming that queue and a concurrency
+  then:
+  - the pool is recorded in configuration
+  - running the controller starts worker processes for it
+  - the restart policy is applied when a worker process exits
+- scenario: A pool definition changes while a controller is running
+  given:
+  - a running controller and an edited pool definition
+  when: the operator changes the pool
+  then:
+  - the change reports that a restart is required
+  - running controller processes keep the old definition until restarted
+acceptance_criteria:
+- Pools are managed through commands rather than by hand-editing YAML.
+- The controller supervises workers; it never schedules or creates jobs.
+priority: high
+source_refs:
+- type: docs
+  path: docs/user/operations.md
+  section: Controller Mode
+  line: 285
+interfaces:
+  cli:
+  - xq controller pools ensure <name>
+  - xq controller pools list
+  - xq controller run
+  - xq controller status
+  api:
+  - Xqueue.controller
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user

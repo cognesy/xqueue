@@ -1,0 +1,56 @@
+schema_version: 1
+id: controller
+title: Controller
+status: implemented
+summary: A single-machine control plane that supervises configured worker pools, either
+  run directly or installed as an OS-managed service.
+user_value: Workers can be run as a managed fleet that survives logout and reboot,
+  drained or restarted as a unit, instead of being started by hand.
+scope_boundary:
+  includes:
+  - Worker pool configuration, listing, and removal.
+  - Supervising worker processes and applying a restart policy.
+  - Controller-wide intake pause and resume, drain, restart, and stop.
+  - Managed-service lifecycle through launchd and systemd --user adapters.
+  - Reporting when a pool change requires a controller restart to take effect.
+  excludes:
+  - Scheduling when jobs run; the controller supervises workers, not work.
+  - Managing service artifacts xqueue does not own.
+  - The claiming and execution mechanics themselves, which workers own.
+  assumptions:
+  - Only launchd and systemd --user are integrated in v1.
+  - xq modifies only service artifacts under its own naming convention.
+  - Controller pause-intake is distinct from pausing a single queue.
+source_refs:
+- type: spec
+  path: SPEC.md
+  section: Explicit non-goals for v1 platform integration
+  line: 549
+- type: spec
+  path: SPEC.md
+  section: Ownership Model
+  line: 561
+- type: code
+  path: libs/controller/api.py
+- type: docs
+  path: docs/user/operations.md
+  section: Controller Mode
+  line: 285
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user
+- at: '2026-08-04'
+  change: created
+  reason: Initial capability model reconstructed from SPEC.md, AGENTS.md, and libs/controller
+use_cases:
+- id: run-controller-as-service
+  status: implemented
+- id: supervise-worker-pools
+  status: implemented

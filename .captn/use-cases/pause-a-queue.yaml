@@ -1,0 +1,48 @@
+schema_version: 1
+id: pause-a-queue
+title: Pause and resume one named queue
+capability: queues
+status: implemented
+narrative:
+  as_a: operator
+  i_want: to stop one class of work from being claimed while leaving the rest running
+  so_that: I can hold back risky or noisy work without stopping the machine
+expected_behavior:
+- scenario: A queue is paused
+  given:
+  - a queue with claimable jobs and at least one active worker
+  when: the operator pauses that queue
+  then:
+  - no worker claims further jobs from it
+  - jobs already running are allowed to finish
+  - other queues are unaffected
+- scenario: A queue is resumed
+  given:
+  - a paused queue holding queued jobs
+  when: the operator resumes it
+  then:
+  - claiming resumes on the next poll
+acceptance_criteria:
+- Queue pause is per queue and distinct from controller-wide intake pause.
+- Pausing never discards work; it only blocks claiming.
+priority: high
+source_refs:
+- type: docs
+  path: docs/user/operations.md
+  section: Queue And Worker Controls
+  line: 254
+interfaces:
+  cli:
+  - xq queues pause <name>
+  - xq queues resume <name>
+  - xq queues list
+  api:
+  - Xqueue.queues.pause
+  - Xqueue.queues.resume
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user

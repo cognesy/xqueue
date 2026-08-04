@@ -46,10 +46,15 @@ $ xq --help
 xq requires the cli extra: pip install "xqueue[cli]"
 ```
 
+`xq --version` is the exception, and deliberately so: it reports which build is
+on `PATH`, so it must not need the part of the install it is being used to
+check. It answers on a bare `xqueue` too.
+
 The console script entrypoint is `xq`. Run `xq workspace init` once to create
-a `.xqueue/` directory here, and every command in this guide will find it by
-walking up from the working directory. Without one, they use the machine-wide
-instance at `XQUEUE_HOME`, or `~/.xqueue/`.
+a `.xqueue/` directory here -- marker, config, and a database migrated to the
+current schema, so `xq enqueue` works immediately. Every command in this guide
+will find it by walking up from the working directory. Without one, they use
+the machine-wide instance at `XQUEUE_HOME`, or `~/.xqueue/`.
 
 To inspect the resolved paths:
 

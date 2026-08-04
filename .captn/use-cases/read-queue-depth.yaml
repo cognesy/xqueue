@@ -1,0 +1,37 @@
+schema_version: 1
+id: read-queue-depth
+title: Read queue depth and job-state counts
+capability: queues
+status: implemented
+narrative:
+  as_a: agent
+  i_want: aggregate counts per queue and job state
+  so_that: I can decide whether work is backing up before enqueueing more
+expected_behavior:
+- scenario: Statistics are requested
+  given:
+  - jobs distributed across queues and states
+  when: the caller asks for queue statistics
+  then:
+  - each queue is returned with counts broken down by job state
+  - the response uses the stable list envelope
+acceptance_criteria:
+- Statistics are derived through the public job-state contract, not SQLite models.
+- Counts are consistent with what a job list of the same filter would return.
+priority: medium
+source_refs:
+- type: code
+  path: libs/queues/api.py
+interfaces:
+  cli:
+  - xq queues stats
+  - xq -o json queues list
+  api:
+  - Xqueue.queues.stats
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user

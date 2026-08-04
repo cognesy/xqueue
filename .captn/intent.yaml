@@ -1,0 +1,252 @@
+schema_version: 1
+name: xqueue
+headline: A minimal, single-machine, CLI-first durable work queue for running shell
+  commands.
+purpose: Give local automation durability, retries, cancellation, worker concurrency,
+  and inspectable logs without adopting a distributed broker or turning every task
+  into an application-specific callable. The unit of work stays one shell command
+  plus execution metadata, so anything that can be run from a terminal can be queued
+  without being rewritten first.
+problems:
+- id: heavy-infrastructure-for-local-work
+  statement: Durable local work forces a choice between a distributed broker and no
+    durability at all.
+  impact: Operators either run infrastructure far larger than one machine needs, or
+    lose jobs whenever a process dies.
+  felt_by:
+  - operator
+  - agent
+- id: callable-shaped-queues
+  statement: Existing queues are tied to application-level function execution, so
+    work must be rewritten as a serializable callable before it can be queued.
+  impact: Shell tools, scripts, and other languages cannot be queued without a wrapper
+    layer that exists only to satisfy the queue.
+  felt_by:
+  - operator
+  - agent
+- id: opaque-execution-history
+  statement: When a background command fails, its output and the reason it stopped
+    are usually gone.
+  impact: Diagnosis becomes guesswork; there is no per-attempt record of stdout, stderr,
+    exit code, timeout, or cancellation.
+  felt_by:
+  - operator
+- id: uncontrolled-local-concurrency
+  statement: Ad hoc background execution has no admission control, so concurrent work
+    is bounded only by how fast it is launched.
+  impact: A single machine is overwhelmed by work that nothing was tracking or limiting.
+  felt_by:
+  - operator
+- id: unstructured-output-for-automation
+  statement: CLI tools built for humans emit prose that automation must scrape.
+  impact: Agents consuming the tool break on cosmetic output changes and cannot distinguish
+    payload from log noise.
+  felt_by:
+  - agent
+audiences:
+- id: operator
+  kind: human
+  name: Local operator or developer
+  needs:
+  - Queue a shell command and trust it will run even if something crashes.
+  - Inspect, cancel, retry, and purge work from the terminal.
+  - See per-attempt stdout, stderr, and lifecycle events after the fact.
+  - Control how much runs at once on one machine.
+- id: agent
+  kind: agent
+  name: Automation or coding agent driving xq
+  needs:
+  - Stable structured stdout envelopes that survive cosmetic changes.
+  - Logs kept on stderr so stdout is purely payload.
+  - Exit codes that distinguish usage, configuration, and runtime failure.
+- id: embedder
+  kind: human
+  name: Python embedder using the SDK
+  needs:
+  - A typed, lifecycle-safe API that returns domain values, not CLI envelopes.
+  - Installation without Typer, Rich, or other presentation dependencies.
+goals:
+- id: durable-command-execution
+  statement: A queued command survives process death and is retried or recovered according
+    to explicit policy.
+  success_measures:
+  - Job state transitions are persisted in SQLite before they are reported.
+  - A worker that dies mid-job leaves a stale lease that recovery can requeue.
+  - Retry eligibility follows max_attempts rather than implicit behavior.
+- id: cli-first-operability
+  statement: Every important operation is reachable from `xq`, with structured output
+    as a first-class API.
+  success_measures:
+  - Enqueue, inspect, cancel, retry, purge, worker, queue, and controller operations
+    all have commands.
+  - list, detail, and mutation responses use stable JSON envelope shapes.
+  - stdout carries the payload and stderr carries structured logs.
+- id: correct-process-control
+  statement: Timeout and cancellation terminate the whole process tree a job started,
+    not just its immediate child.
+  success_measures:
+  - Commands run in their own process groups.
+  - Cancellation escalates from SIGTERM to SIGKILL after a grace period.
+- id: legible-execution-history
+  statement: Every attempt leaves an inspectable record.
+  success_measures:
+  - Per-attempt stdout, stderr, and JSONL lifecycle events are written to disk.
+  - Job detail exposes attempt history with paths to those files.
+- id: embeddable-without-the-cli
+  statement: The library is usable from Python without installing the CLI surface.
+  success_measures:
+  - Importing xqueue does not import Typer or Rich.
+  - The CLI dependencies live behind an installable extra.
+non_goals:
+- statement: Distributed workers or a remote broker mode.
+  rationale: The design is deliberately local-first and single-machine; distribution
+    would change the durability, claiming, and recovery model entirely.
+  route_to: A real message broker such as Redis, RabbitMQ, or SQS.
+- statement: DAG or workflow dependencies between jobs.
+  rationale: Job-to-job dependency resolution makes xqueue a workflow engine, which
+    is a different product with a different core model.
+  route_to: A workflow engine such as Airflow, Prefect, Dagster, or Temporal.
+- statement: Cron-like scheduling of when work should happen.
+  rationale: Deciding when work exists belongs upstream; xqueue only executes what
+    has been enqueued.
+  route_to: xcron, or the system cron and timer facilities.
+- statement: A web or graphical user interface.
+  rationale: The CLI is the product surface, not a thin wrapper over an API a UI would
+    also consume.
+  route_to: The `xq` CLI, its JSON output, and the Python SDK.
+- statement: A plugin or extension framework.
+  rationale: Extension points would freeze internal boundaries that are still being
+    deliberately reshaped, for speculative benefit.
+  route_to: The Python SDK, or a fork.
+- statement: Exactly-once delivery semantics.
+  rationale: Delivery is at-least-once by design; a worker that dies after claiming
+    may have its job run again after recovery.
+  route_to: Idempotent commands, or application-level deduplication inside the queued
+    command.
+- statement: Running Python callables instead of shell commands.
+  rationale: A command-first model is what lets any executable be queued without being
+    rewritten to satisfy the queue.
+  route_to: An in-process task library, or a wrapper script that xqueue runs.
+- statement: Replacing OS-level service supervision.
+  rationale: launchd and systemd are integrated as adapters for xqueue's own controller
+    only; xqueue manages solely the service artifacts it owns.
+  route_to: launchd, systemd, or another init system directly.
+- statement: Claiming support for every Linux init system, including OpenRC, runit,
+    and s6.
+  rationale: Only launchd and systemd --user are integrated in v1; more may follow
+    the same boundary if real operator demand appears.
+  route_to: Direct init-system configuration, or running the controller directly.
+- statement: A database backend other than SQLite.
+  rationale: SQLite is a fixed product choice for a single-machine tool; public replaceability
+    would be a false promise. Ports exist to stop ORM objects leaking, not to advertise
+    portability.
+  route_to: A queue built for a client-server database.
+guiding_metaphor:
+  metaphor: A dockside crew with a written work order book.
+  boundary: The book records what to run, who took it, and how it ended. It does not
+    decide when work appears, and it does not route work between docks.
+context:
+  environment: One machine. State lives in a SQLite database and per-attempt log files
+    under a workspace directory, resolved by walking up from the working directory
+    to a `.xqueue/` marker, or falling back to `XQUEUE_HOME` or `~/.xqueue/`.
+  assumptions:
+  - A local process such as xcron decides when work exists; xqueue only runs it.
+  - Queued commands are retriable or idempotent, because delivery is at-least-once.
+  - Operators and agents drive the system through `xq`, not through a GUI.
+  - Python 3.11+ with uv is the supported toolchain.
+outcomes:
+- audience: operator
+  statement: Background work on a laptop or server becomes durable and inspectable
+    without standing up infrastructure.
+- audience: agent
+  statement: Long-running commands can be handed off and polled through a stable machine-readable
+    contract.
+- audience: embedder
+  statement: A Python program can own a queue directly without shelling out.
+exclusions:
+- YAML is never used for mutable queue state, only for static configuration.
+- Rich affects `--output text` only; structured output never depends on it.
+- Automatic retention pruning; cleanup is explicit and operator-invoked.
+bets:
+- id: command-first-model-is-enough
+  statement: One command string plus execution metadata covers the primary use case,
+    so argv/exec mode can stay optional.
+  checked_by: Whether real operator workflows keep needing shell-mode escapes or start
+    demanding direct exec.
+  verdict: open
+- id: cli-as-the-api
+  statement: Structured CLI output is a good enough integration contract that no network
+    API is needed.
+  checked_by: Whether agent consumers can drive every workflow through stdout envelopes
+    and exit codes alone.
+  verdict: open
+- id: capabilities-keep-change-local
+  statement: Organizing the library by public capability keeps changes from rippling
+    across the codebase.
+  checked_by: Whether the Import Linter contracts and boundary checks keep passing
+    without being relaxed.
+  verdict: open
+stakeholders:
+- Dariusz Debowczyk, author and primary operator.
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+source_refs:
+- type: spec
+  path: SPEC.md
+  section: Name
+  line: 3
+- type: spec
+  path: SPEC.md
+  section: Context
+  line: 45
+- type: spec
+  path: SPEC.md
+  section: Problem Statement
+  line: 60
+- type: spec
+  path: SPEC.md
+  section: Product Positioning
+  line: 80
+- type: spec
+  path: SPEC.md
+  section: Explicitly out of scope for v1
+  line: 231
+- type: spec
+  path: SPEC.md
+  section: Explicit non-goals for v1 platform integration
+  line: 549
+- type: spec
+  path: SPEC.md
+  section: Ownership Model
+  line: 561
+- type: docs
+  path: AGENTS.md
+  section: Mission
+  line: 8
+- type: docs
+  path: AGENTS.md
+  section: Product Boundaries
+  line: 22
+- type: docs
+  path: AGENTS.md
+  section: Explicit v1 Non-Goals
+  line: 116
+- type: docs
+  path: README.md
+  section: Problem
+  line: 5
+open_questions:
+- Is direct argv/exec mode still deliberately deferred, or has a real need for it
+  appeared since the spec was written?
+- Should the queue-level priority field be modeled as a capability behavior, or is
+  it inert until a scheduler-shaped need arrives?
+notes:
+- Reconstructed from SPEC.md, AGENTS.md, and README.md rather than authored fresh;
+  SPEC.md remains the source of truth and this record compresses it.
+- Non-goals are recorded verbatim in intent from two independent statements (SPEC.md
+  and AGENTS.md) that agree.
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Reconstruct intent from SPEC.md, AGENTS.md, and README.md during captn adoption

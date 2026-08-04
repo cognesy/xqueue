@@ -1,0 +1,77 @@
+schema_version: 1
+id: find-the-workspace
+title: Find which instance a command is talking to
+capability: workspace
+status: implemented
+narrative:
+  as_a: operator
+  i_want: commands to locate the right database and logs on their own
+  so_that: I do not have to pass paths to every invocation
+expected_behavior:
+- scenario: A command runs inside a project workspace
+  given:
+  - a .xqueue/ marker somewhere at or above the working directory
+  when: any command starts
+  then:
+  - that directory is used for the database, run, and log paths
+  - nested working directories resolve to the same workspace
+- scenario: A command runs outside any workspace
+  given:
+  - no marker at or above the working directory
+  when: any command starts
+  then:
+  - the machine-wide instance is used, at XQUEUE_HOME or ~/.xqueue/
+- scenario: A workspace is created
+  given:
+  - a project directory with no workspace
+  when: the operator initializes one
+  then:
+  - a marker, configuration file, and runtime paths are created
+  - the database is migrated to the current schema, so the next command can enqueue
+  - re-running it does not damage an existing workspace
+- scenario: Something that is not a database occupies the database path
+  given:
+  - a workspace whose xqueue.db is not a SQLite file
+  when: the operator initializes it again
+  then:
+  - the path is reported as conflicting
+  - the file is neither migrated nor removed
+acceptance_criteria:
+- Resolution happens once in the composition root and the decided root is handed down.
+- No capability resolves a workspace for itself.
+- XQUEUE_HOME, XQUEUE_ROOT, and XQUEUE_DB_PATH are answered before configuration is
+  read.
+- Initialization leaves a workspace that can be enqueued into without a separate migration
+  step, and migrating is idempotent so a second run retains the database.
+priority: critical
+source_refs:
+- type: code
+  path: libs/workspace/resolver.py
+- type: docs
+  path: docs/user/operations.md
+  section: Runtime Model
+  line: 3
+interfaces:
+  cli:
+  - xq workspace init
+  - xq config show
+  api:
+  - Xqueue.open(workspace_root=...)
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: changed
+  reason: workspace init now migrates the database to head instead of leaving enqueue
+    to fail on a missing schema
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user
+edge_cases:
+- An empty xqueue.db, which is what an interrupted create leaves behind, is treated
+  as migratable rather than as a conflict.
+- A non-SQLite file at the database path is reported, never deleted, matching how
+  a file where a directory belongs is handled.
+related_tests:
+- tests/workspace/unit/test_init.py

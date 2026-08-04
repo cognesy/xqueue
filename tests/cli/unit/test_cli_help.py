@@ -59,3 +59,20 @@ def test_command_group_inventory_is_stable() -> None:
         assert result.exit_code == 0
         for command in commands:
             assert command in result.stdout
+
+
+def test_version_prints_the_installed_version_and_exits_clean() -> None:
+    """The cheapest possible install check: which build is on PATH."""
+    result = runner.invoke(app, ["--version"])
+
+    assert result.exit_code == 0, result.stdout
+    assert result.stdout.startswith("xq ")
+    assert result.stdout.split()[1]
+
+
+def test_version_is_listed_in_help() -> None:
+    """A flag nobody can discover is a flag nobody uses."""
+    result = runner.invoke(app, ["--help"])
+
+    assert result.exit_code == 0
+    assert "--version" in result.stdout

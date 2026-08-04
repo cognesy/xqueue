@@ -1,4 +1,10 @@
-"""Workspace-local instance reset adapter."""
+"""Bringing a workspace database to head, and resetting instance artifacts.
+
+Both things live here because both are the same conversation with Alembic, and
+because that conversation is mediated by `XQUEUE_DB_PATH`: the migration
+environment reads the database location from the environment, so whoever calls
+it has to set that variable for the duration.
+"""
 
 from __future__ import annotations
 
@@ -12,6 +18,33 @@ from alembic import command
 from alembic.config import Config
 from xqueue.runtime.resources import resource_path
 from xqueue.workspace.models import RuntimePaths, WorkspaceInstanceResetResult
+
+
+@contextmanager
+def _database_path_override(database_path: Path) -> Iterator[None]:
+    """Point the migration environment at one database, then put it back."""
+    previous = os.environ.get("XQUEUE_DB_PATH")
+    os.environ["XQUEUE_DB_PATH"] = str(database_path)
+    try:
+        yield
+    finally:
+        if previous is None:
+            os.environ.pop("XQUEUE_DB_PATH", None)
+        else:
+            os.environ["XQUEUE_DB_PATH"] = previous
+
+
+def upgrade_database(database_path: Path) -> None:
+    """Run migrations up to head against `database_path`, creating it if absent.
+
+    Idempotent: at head this is a no-op, so callers may run it whenever they
+    want the schema to exist rather than having to know whether it does.
+    """
+    config = Config()
+    with resource_path("alembic") as alembic_path:
+        config.set_main_option("script_location", str(alembic_path))
+        with _database_path_override(database_path):
+            command.upgrade(config, "head")
 
 
 class WorkspaceInstanceService:
@@ -37,11 +70,7 @@ class WorkspaceInstanceService:
             path.mkdir(parents=True, exist_ok=True)
             recreated_paths.append(str(path))
 
-        config = Config()
-        with resource_path("alembic") as alembic_path:
-            config.set_main_option("script_location", str(alembic_path))
-            with self._database_path_override(paths.database_path):
-                command.upgrade(config, "head")
+        upgrade_database(paths.database_path)
         recreated_paths.append(str(paths.database_path))
 
         return WorkspaceInstanceResetResult(
@@ -51,14 +80,5 @@ class WorkspaceInstanceService:
             recreated_paths=recreated_paths,
         )
 
-    @contextmanager
-    def _database_path_override(self, database_path: Path) -> Iterator[None]:
-        previous = os.environ.get("XQUEUE_DB_PATH")
-        os.environ["XQUEUE_DB_PATH"] = str(database_path)
-        try:
-            yield
-        finally:
-            if previous is None:
-                os.environ.pop("XQUEUE_DB_PATH", None)
-            else:
-                os.environ["XQUEUE_DB_PATH"] = previous
+
+__all__ = ["WorkspaceInstanceService", "upgrade_database"]

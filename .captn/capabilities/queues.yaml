@@ -1,0 +1,50 @@
+schema_version: 1
+id: queues
+title: Queues
+status: implemented
+summary: Named lanes that jobs are enqueued into and claimed from, with per-queue
+  admission control and aggregate counts.
+user_value: Work can be separated by kind and throttled independently, so pausing
+  one class of work does not stop everything else on the machine.
+scope_boundary:
+  includes:
+  - Queue existence, listing, and paused or active state.
+  - Pausing and resuming a single named queue's claims.
+  - Aggregate statistics such as counts by job state.
+  - Queue-level purge policy.
+  excludes:
+  - Priority ordering across queues; xqueue does not schedule.
+  - Routing rules that decide which queue a job belongs in.
+  - Per-queue worker supervision, which the controller owns.
+  assumptions:
+  - Queues are created implicitly by use rather than declared up front.
+  - Queue statistics read job state through a public contract, never the SQLite models.
+source_refs:
+- type: spec
+  path: SPEC.md
+  section: Product Positioning
+  line: 80
+- type: code
+  path: libs/queues/api.py
+- type: docs
+  path: docs/user/operations.md
+  section: Queue And Worker Controls
+  line: 254
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user
+- at: '2026-08-04'
+  change: created
+  reason: Initial capability model reconstructed from SPEC.md, AGENTS.md, and libs/queues
+use_cases:
+- id: pause-a-queue
+  status: implemented
+- id: read-queue-depth
+  status: implemented

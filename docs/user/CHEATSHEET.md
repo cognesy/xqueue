@@ -15,7 +15,8 @@ here". It still works, and it now means `.xqueue/` rather than the old
 ```sh
 uv sync                        # dev group includes the cli extra
 uv tool install "xqueue[cli]"  # or, as an installed tool
-uv run xq workspace init       # creates ./.xqueue/ with a marker and config
+uv run xq --version            # which build is on PATH; works without the extra
+uv run xq workspace init       # creates ./.xqueue/, ready to enqueue into
 uv run xq --help
 uv run xq
 uv run xq -o json config show

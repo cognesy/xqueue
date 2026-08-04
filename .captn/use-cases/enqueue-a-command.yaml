@@ -1,0 +1,54 @@
+schema_version: 1
+id: enqueue-a-command
+title: Enqueue a shell command as a durable job
+capability: jobs
+status: implemented
+narrative:
+  as_a: operator
+  i_want: to hand a shell command to xqueue with its execution metadata
+  so_that: it runs later, survives a crash, and can be found again by id
+expected_behavior:
+- scenario: A command is enqueued into a named queue
+  given:
+  - a resolved workspace with an initialized database
+  - a queue name, which need not exist beforehand
+  when: the operator enqueues a command with optional cwd, env, timeout, and max attempts
+  then:
+  - the job is persisted before the command reports success
+  - the job is returned with an id and the queued state
+  - the job becomes claimable by a worker polling that queue
+- scenario: Execution metadata is carried with the job
+  given:
+  - an enqueue request specifying cwd, environment pairs, and a timeout
+  when: a worker later executes the job
+  then:
+  - the subprocess runs in the requested working directory
+  - the requested environment values are present
+  - the timeout applies to that attempt
+acceptance_criteria:
+- A job id is returned and is sufficient to address the job in every other command.
+- Enqueue does not execute the command.
+- A job survives process restart because it was written to SQLite, not held in memory.
+- max_attempts recorded at enqueue governs later retry eligibility.
+priority: critical
+source_refs:
+- type: spec
+  path: SPEC.md
+  section: Core Model
+  line: 97
+- type: docs
+  path: docs/user/operations.md
+  section: Enqueue Jobs
+  line: 99
+interfaces:
+  cli:
+  - xq enqueue --queue <name> -- <command>
+  api:
+  - Xqueue.jobs.enqueue
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user

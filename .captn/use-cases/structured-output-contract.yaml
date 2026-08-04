@@ -1,0 +1,57 @@
+schema_version: 1
+id: structured-output-contract
+title: Consume the CLI as a machine-readable API
+capability: interfaces
+status: implemented
+narrative:
+  as_a: agent
+  i_want: stable structured envelopes on stdout and logs kept on stderr
+  so_that: I can drive xqueue without scraping prose or breaking on cosmetic changes
+expected_behavior:
+- scenario: A list command is consumed by automation
+  given:
+  - a chosen output mode of toon, json, or jsonl
+  when: the agent runs a list, detail, or mutation command
+  then:
+  - lists return an items envelope, details an item envelope, mutations an ok-and-item
+    envelope
+  - failures return an ok-false error envelope
+  - stdout carries only the payload
+- scenario: Application logs are emitted
+  given:
+  - any command producing structured logs
+  when: it runs
+  then:
+  - structlog output goes to stderr as JSON
+  - stdout remains parseable as a single payload
+- scenario: A narrower payload is requested
+  given:
+  - a command returning more fields than the caller needs
+  when: the agent selects specific fields
+  then:
+  - only those fields are rendered
+acceptance_criteria:
+- Rich affects the text mode only; structured output never depends on it.
+- toon is the default stdout format.
+- Exit codes distinguish usage, configuration, and runtime failure.
+priority: critical
+source_refs:
+- type: docs
+  path: AGENTS.md
+  section: CLI Contract
+  line: 129
+- type: docs
+  path: docs/user/operations.md
+  section: Output Modes And Logs
+  line: 56
+interfaces:
+  cli:
+  - xq -o json ...
+  - xq --fields id,state jobs list
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user

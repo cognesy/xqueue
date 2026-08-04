@@ -1,0 +1,36 @@
+schema_version: 1
+id: prune-old-history
+title: Prune old history and logs on explicit request
+capability: maintenance
+status: implemented
+narrative:
+  as_a: operator
+  i_want: to remove old attempts, events, and log files when I choose to
+  so_that: disk use stays bounded without history disappearing behind my back
+expected_behavior:
+- scenario: Retention cleanup is invoked
+  given:
+  - history older than a chosen age threshold
+  when: the operator runs retention cleanup with explicit confirmation
+  then:
+  - attempts, events, and log files are pruned as selected
+  - top-level job rows and summary metadata are retained
+acceptance_criteria:
+- Cleanup never runs automatically or as a side effect of another command.
+- The operator selects which classes of history to prune.
+priority: low
+source_refs:
+- type: docs
+  path: docs/user/operations.md
+  section: Health, Recovery, And Maintenance
+  line: 352
+interfaces:
+  cli:
+  - xq db cleanup-retention --older-than-hours N --yes
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user

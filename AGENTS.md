@@ -331,6 +331,18 @@ canonical list; it is repeated here in full so the two cannot drift apart:
   runs Semgrep itself through `uvx`
 - `uv run pytest` for behavior
 
+The intent model in `.captn/` has its own gate, kept separate because `captn`
+is an installed `uv` tool rather than a project dependency:
+
+- `captn validate . --strict` for the intent, capability, and use-case corpus
+- `captn doctor .` for workspace structure and orphan links
+
+Read it before planning work -- `captn context-vision .` states the mission and
+the non-goals, and `captn context-capabilities .` is the capability map. The
+recorded non-goals outrank a locally reasonable feature idea; surface the
+conflict instead of quietly building it. When behavior changes, record it with
+`captn usecase-change` / `capability-change` and a `--reason`.
+
 The shared `xqa` checks need the sibling repository at `../xqa`:
 
 - `uv run --project ../xqa --all-packages xqa doctor --root . --format json`

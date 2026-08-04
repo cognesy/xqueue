@@ -16,6 +16,7 @@ work and enqueue command jobs, while `xq` workers own execution and state.
 ## Example Usage
 
 ```sh
+uv run xq --version
 uv run xq workspace init
 uv run xq enqueue --queue default -- /bin/sh -lc 'echo hello'
 uv run xq jobs list

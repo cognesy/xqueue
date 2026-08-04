@@ -1,0 +1,61 @@
+schema_version: 1
+id: claim-and-execute
+title: Claim a job transactionally and execute it under a lease
+capability: workers
+status: implemented
+narrative:
+  as_a: operator
+  i_want: workers that take each job exactly once and hold it while they work
+  so_that: concurrent workers never run the same job twice at the same time
+expected_behavior:
+- scenario: Two workers poll the same queue at once
+  given:
+  - one claimable job and two polling workers
+  when: both attempt to claim
+  then:
+  - exactly one worker receives the job
+  - the other receives nothing and keeps polling
+- scenario: A claimed job is executed
+  given:
+  - a worker running in execute-claimed mode
+  when: it executes the claimed job
+  then:
+  - the command runs as a subprocess in its own process group
+  - stdout and stderr are written to per-attempt files
+  - the lease is renewed by heartbeat while the job runs
+  - the terminal outcome and exit code are recorded on the attempt
+- scenario: A job exceeds its timeout
+  given:
+  - a job with a timeout and a command that outlives it
+  when: the timeout elapses
+  then:
+  - the whole process group is terminated
+  - the attempt is recorded as timed out
+  - retry eligibility is evaluated against max_attempts
+acceptance_criteria:
+- Claiming is a database transaction, not a read followed by a write.
+- Concurrency above one is accepted only with continuous execute-claimed mode.
+- A worker that dies leaves a lease that expires rather than a permanently held job.
+priority: critical
+source_refs:
+- type: docs
+  path: docs/user/operations.md
+  section: Run Workers
+  line: 120
+- type: docs
+  path: AGENTS.md
+  section: Core Model
+  line: 38
+interfaces:
+  cli:
+  - xq worker --queue <name> --execute-claimed
+  - xq worker --continuous --concurrency N
+  api:
+  - Xqueue.workers
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: created
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user

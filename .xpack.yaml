@@ -2,6 +2,13 @@ expected_scripts:
   - xq
 
 smoke_commands:
+  # First, because it is the one command that answers without the cli extra:
+  # if this fails the install is broken in a way the others cannot distinguish
+  # from a missing dependency.
+  - name: xq
+    args: ["--version"]
+    env:
+      XQUEUE_HOME: "{home}/xqueue"
   - name: xq
     args: ["--help"]
     env:

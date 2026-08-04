@@ -11,6 +11,12 @@ Both live in one workspace directory, created by `xq workspace init`:
 - `.xqueue/run/`
 - `.xqueue/logs/`
 
+`init` migrates the database to the current schema, so the workspace is ready
+to enqueue into as soon as the command returns. Migrating is idempotent: a
+second `init` reports the database as retained and leaves it untouched. If
+something that is not a SQLite database already occupies `.xqueue/xqueue.db`,
+`init` reports it as a conflicting path rather than migrating or removing it.
+
 Every command finds that directory by walking up from the working directory.
 Outside a workspace the same paths resolve under the machine-wide instance:
 `XQUEUE_HOME`, or `~/.xqueue/`. Use `xq -o json config show` to confirm the

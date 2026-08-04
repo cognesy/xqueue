@@ -1,0 +1,9 @@
+schema_version: 1
+name: xqueue
+captain_version: "0.2.0"
+layout_version: 1
+schemas:
+  intent: {file: schemas/intent.yaml, version: 1}
+  capability: {file: schemas/capability.yaml, version: 1}
+  use_case: {file: schemas/use-case.yaml, version: 1}
+  tombstone: {file: schemas/tombstone.yaml, version: 1}

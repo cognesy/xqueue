@@ -1,0 +1,68 @@
+schema_version: 1
+id: workspace
+title: Workspace and configuration
+status: implemented
+summary: Deciding which xqueue instance a command is talking to, and composing the
+  effective settings for it from ordered configuration layers.
+user_value: Commands find the right database and logs without being told where they
+  are, and when a setting is not what was expected, one command shows which layer
+  decided it.
+scope_boundary:
+  includes:
+  - Resolving a workspace by walking up to a .xqueue/ marker, else falling back to
+    XQUEUE_HOME or ~/.xqueue/.
+  - Initializing a workspace with its marker, config, database, and log paths.
+  - Layered configuration composition, lowest first, behind one adapter.
+  - Reporting the effective settings together with which layers contributed.
+  - Workspace-instance reset and packaged resource lookup.
+  - Agent session hook installation and status.
+  excludes:
+  - Mutable queue state; YAML is for static configuration only.
+  - Letting a capability resolve a workspace for itself; resolution happens once in
+    the composition root.
+  - Configuration libraries leaking past the loader.
+  assumptions:
+  - Precedence is packaged defaults (or --config, which replaces them), then the --env
+    overlay, user config, workspace config, environment, and --set.
+  - XQUEUE_HOME, XQUEUE_ROOT, and XQUEUE_DB_PATH choose where the workspace is, and
+    are answered before configuration is read.
+  - Only environment variables containing a doubled underscore are settings.
+  - Configuration failure exits 2, before the subcommand's own output mode is read.
+source_refs:
+- type: code
+  path: libs/workspace/loader.py
+- type: code
+  path: libs/workspace/resolver.py
+- type: docs
+  path: docs/user/operations.md
+  section: Configuration
+  line: 22
+- type: docs
+  path: docs/dev/architecture.md
+  section: Configuration Boundary
+provenance:
+  mode: reconstructed
+  confidence: confirmed
+changelog:
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: workspace init now migrates the database to head instead of leaving enqueue
+    to fail on a missing schema
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: workspace init now migrates the database to head instead of leaving enqueue
+    to fail on a missing schema
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user
+- at: '2026-08-04'
+  change: updated use-case link
+  reason: Initial use-case model reconstructed from SPEC.md, AGENTS.md, and docs/user
+- at: '2026-08-04'
+  change: created
+  reason: Initial capability model reconstructed from SPEC.md, AGENTS.md, and libs/workspace
+use_cases:
+- id: explain-effective-config
+  status: implemented
+- id: find-the-workspace
+  status: implemented
