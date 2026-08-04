@@ -1,0 +1,3 @@
+libs/queues/bad.py
+---
+from xqueue.jobs.store import JobService

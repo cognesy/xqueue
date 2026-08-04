@@ -1,0 +1,3 @@
+libs/adapters/bad.py
+---
+from xqueue_cli.output import Output

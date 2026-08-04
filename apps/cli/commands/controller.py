@@ -2,80 +2,19 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-import sys
+from collections.abc import Callable
 
 import typer
-
+from xqueue.controller.models import ControllerState, ServiceManagerKind
+from xqueue.workspace.models import RestartPolicy
+from xqueue_cli.client import open_client
+from xqueue_cli.contracts import DetailResponse, ListResponse, MutationResponse
+from xqueue_cli.controller_pools import for_display
 from xqueue_cli.output import Output, OutputFormat
 from xqueue_cli.runtime import run_action
-from xqueue_libs.actions.controller import (
-    EnsureControllerPoolAction,
-    InstallManagedControllerAction,
-    ListControllerPoolsAction,
-    ManagedControllerLifecycleAction,
-    ManagedControllerStatusAction,
-    RemoveControllerPoolAction,
-    RequestControllerStateAction,
-    RunControllerAction,
-    ShowControllerStatusAction,
-    UninstallManagedControllerAction,
-)
-from xqueue_libs.domain.config import RestartPolicy
-from xqueue_libs.domain.errors import ValidationError
-from xqueue_libs.domain.models import ControllerState, ServiceManagerKind
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.services.config import ConfigLoader, ControllerPoolConfigService
-from xqueue_libs.services.controller import ControllerService
-from xqueue_libs.services.database import SessionManager
-from xqueue_libs.services.launchd import LaunchdService
-from xqueue_libs.services.systemd import SystemdUserService
-from xqueue_libs.services.workers import WorkerService
-
 
 app = typer.Typer(help="Supervise configured worker pools in direct controller mode.")
 pools_app = typer.Typer(help="Manage static controller worker pool configuration.")
-
-
-def _build_runtime(use_workspace_instance: bool):
-    workspace_root = Path.cwd()
-    config = ConfigLoader().load(
-        workspace_root=workspace_root,
-        use_workspace_instance=use_workspace_instance,
-    )
-    engine = create_sqlite_engine(config.paths.database_path)
-    session_factory = create_session_factory(engine)
-    controller_service = ControllerService(
-        SessionManager(session_factory),
-        WorkerService(),
-    )
-    return workspace_root, config, controller_service
-
-
-def _resolve_config_path(use_workspace_instance: bool) -> Path:
-    return ConfigLoader().resolve_paths(
-        workspace_root=Path.cwd(),
-        use_workspace_instance=use_workspace_instance,
-    ).config_file
-
-
-def _resolve_managed_platform(platform: ServiceManagerKind | None) -> ServiceManagerKind:
-    if platform is not None:
-        return platform
-    if sys.platform == "darwin":
-        return ServiceManagerKind.LAUNCHD
-    if sys.platform.startswith("linux"):
-        return ServiceManagerKind.SYSTEMD
-    raise ValidationError("no supported managed controller platform for this system", details={"platform": sys.platform})
-
-
-def _build_managed_service(platform: ServiceManagerKind | None):
-    resolved = _resolve_managed_platform(platform)
-    if resolved is ServiceManagerKind.LAUNCHD:
-        return LaunchdService(python_executable=sys.executable)
-    if resolved is ServiceManagerKind.SYSTEMD:
-        return SystemdUserService(python_executable=sys.executable)
-    raise ValidationError("unsupported managed controller platform", details={"platform": resolved.value})
 
 
 @app.command("run")
@@ -92,24 +31,17 @@ def run_controller(
     ),
 ) -> None:
     """Run the controller loop directly from the shell."""
-    workspace_root, config, controller_service = _build_runtime(use_workspace_instance)
-    config_loader = ConfigLoader()
-    action = RunControllerAction(controller_service)
     out = Output(ctx, "controller.run", output)
-    run_action(
-        lambda: action(
-            controller_id=controller_id,
-            config=config,
-            reload_config=lambda: config_loader.load(
-                workspace_root=workspace_root,
-                use_workspace_instance=use_workspace_instance,
+    with open_client(use_workspace_instance=use_workspace_instance) as xq:
+        run_action(
+            lambda: DetailResponse(
+                item=xq.controller.run(
+                    controller_id=controller_id,
+                    max_supervision_loops=max_supervision_loops,
+                )
             ),
-            workspace_root=workspace_root,
-            use_workspace_instance=use_workspace_instance,
-            max_supervision_loops=max_supervision_loops,
-        ),
-        out=out,
-    )
+            out=out,
+        )
 
 
 @app.command("status")
@@ -126,16 +58,12 @@ def controller_status(
     ),
 ) -> None:
     """Show the current controller status snapshot."""
-    workspace_root, config, controller_service = _build_runtime(use_workspace_instance)
     out = Output(ctx, "controller.status", output)
-    if platform is not None:
-        managed_service = _build_managed_service(platform)
-        action = ManagedControllerStatusAction(managed_service)
-        run_action(lambda: action(controller_id=controller_id), out=out)
-        return
-
-    action = ShowControllerStatusAction(controller_service)
-    run_action(lambda: action(controller_id=controller_id, config=config), out=out)
+    with open_client(use_workspace_instance=use_workspace_instance) as xq:
+        run_action(
+            lambda: DetailResponse(item=xq.controller.status(controller_id=controller_id, platform=platform)),
+            out=out,
+        )
 
 
 @app.command("install")
@@ -152,18 +80,12 @@ def install_controller(
     ),
 ) -> None:
     """Install the managed controller service for the current platform."""
-    workspace_root, config, _ = _build_runtime(use_workspace_instance)
-    action = InstallManagedControllerAction(_build_managed_service(platform))
     out = Output(ctx, "controller.install", output)
-    run_action(
-        lambda: action(
-            controller_id=controller_id,
-            workspace_root=workspace_root,
-            config=config,
-            use_workspace_instance=use_workspace_instance,
-        ),
-        out=out,
-    )
+    with open_client(use_workspace_instance=use_workspace_instance) as xq:
+        run_action(
+            lambda: MutationResponse(item=xq.controller.install(controller_id=controller_id, platform=platform)),
+            out=out,
+        )
 
 
 @app.command("uninstall")
@@ -180,9 +102,11 @@ def uninstall_controller(
     ),
 ) -> None:
     """Uninstall the managed controller service for the current platform."""
-    _build_runtime(use_workspace_instance)
-    action = UninstallManagedControllerAction(_build_managed_service(platform))
-    run_action(lambda: action(controller_id=controller_id), out=Output(ctx, "controller.uninstall", output))
+    with open_client(use_workspace_instance=use_workspace_instance) as xq:
+        run_action(
+            lambda: MutationResponse(item=xq.controller.uninstall(controller_id=controller_id, platform=platform)),
+            out=Output(ctx, "controller.uninstall", output),
+        )
 
 
 @app.command("start")
@@ -199,12 +123,20 @@ def start_controller(
     ),
 ) -> None:
     """Start the managed controller service for the current platform."""
-    _build_runtime(use_workspace_instance)
-    action = ManagedControllerLifecycleAction(_build_managed_service(platform), operation="start")
-    run_action(lambda: action(controller_id=controller_id), out=Output(ctx, "controller.start", output))
+    with open_client(use_workspace_instance=use_workspace_instance) as xq:
+        run_action(
+            lambda: MutationResponse(
+                item=xq.controller.managed_lifecycle(
+                    controller_id=controller_id,
+                    operation="start",
+                    platform=platform,
+                )
+            ),
+            out=Output(ctx, "controller.start", output),
+        )
 
 
-def _request_state_command(requested_state: ControllerState):
+def _request_state_command(requested_state: ControllerState) -> Callable[..., None]:
     contract_name = {
         ControllerState.DRAINING: "controller.drain",
         ControllerState.RESTARTING: "controller.restart",
@@ -224,28 +156,35 @@ def _request_state_command(requested_state: ControllerState):
         ),
     ) -> None:
         """Request a controller state change."""
-        _, config, controller_service = _build_runtime(use_workspace_instance)
         out = Output(ctx, contract_name, output)
-        if platform is not None:
-            operation = "restart" if requested_state is ControllerState.RESTARTING else "stop"
-            action = ManagedControllerLifecycleAction(_build_managed_service(platform), operation=operation)
-            run_action(lambda: action(controller_id=controller_id), out=out)
-            return
-
-        action = RequestControllerStateAction(controller_service)
-        run_action(
-            lambda: action(
-                controller_id=controller_id,
-                runtime_root=config.paths.runtime_root,
-                requested_state=requested_state,
-            ),
-            out=out,
-        )
+        with open_client(use_workspace_instance=use_workspace_instance) as xq:
+            if platform is not None:
+                operation = "restart" if requested_state is ControllerState.RESTARTING else "stop"
+                run_action(
+                    lambda: MutationResponse(
+                        item=xq.controller.managed_lifecycle(
+                            controller_id=controller_id,
+                            operation=operation,
+                            platform=platform,
+                        )
+                    ),
+                    out=out,
+                )
+                return
+            run_action(
+                lambda: MutationResponse(
+                    item=xq.controller.request_state(
+                        controller_id=controller_id,
+                        requested_state=requested_state,
+                    )
+                ),
+                out=out,
+            )
 
     return command
 
 
-def _request_direct_state_command(requested_state: ControllerState):
+def _request_direct_state_command(requested_state: ControllerState) -> Callable[..., None]:
     contract_name = {
         ControllerState.PAUSED: "controller.pause-intake",
         ControllerState.ACTIVE: "controller.resume-intake",
@@ -263,17 +202,17 @@ def _request_direct_state_command(requested_state: ControllerState):
         ),
     ) -> None:
         """Request a direct-mode controller state change."""
-        _, config, controller_service = _build_runtime(use_workspace_instance)
-        action = RequestControllerStateAction(controller_service)
         out = Output(ctx, contract_name, output)
-        run_action(
-            lambda: action(
-                controller_id=controller_id,
-                runtime_root=config.paths.runtime_root,
-                requested_state=requested_state,
-            ),
-            out=out,
-        )
+        with open_client(use_workspace_instance=use_workspace_instance) as xq:
+            run_action(
+                lambda: MutationResponse(
+                    item=xq.controller.request_state(
+                        controller_id=controller_id,
+                        requested_state=requested_state,
+                    )
+                ),
+                out=out,
+            )
 
     return command
 
@@ -297,9 +236,11 @@ def list_controller_pools(
     ),
 ) -> None:
     """List configured controller worker pools."""
-    config_path = _resolve_config_path(use_workspace_instance)
-    action = ListControllerPoolsAction(ControllerPoolConfigService())
-    run_action(lambda: action(config_path=config_path), out=Output(ctx, "controller.pools.list", output))
+    with open_client(use_workspace_instance=use_workspace_instance) as xq:
+        run_action(
+            lambda: ListResponse(items=xq.controller.list_pools()),
+            out=Output(ctx, "controller.pools.list", output),
+        )
 
 
 @pools_app.command("ensure")
@@ -321,21 +262,23 @@ def ensure_controller_pool(
     ),
 ) -> None:
     """Create or update a configured controller worker pool."""
-    config_path = _resolve_config_path(use_workspace_instance)
-    action = EnsureControllerPoolAction(ControllerPoolConfigService())
-    run_action(
-        lambda: action(
-            config_path=config_path,
-            name=name,
-            queues=queue,
-            concurrency=concurrency,
-            poll_interval_seconds=poll_interval_seconds,
-            lease_seconds=lease_seconds,
-            restart_policy=restart_policy,
-            default_timeout_seconds=default_timeout_seconds,
-        ),
-        out=Output(ctx, "controller.pools.ensure", output),
-    )
+    with open_client(use_workspace_instance=use_workspace_instance) as xq:
+        run_action(
+            lambda: MutationResponse(
+                item=for_display(
+                    xq.controller.ensure_pool(
+                        name=name,
+                        queues=queue,
+                        concurrency=concurrency,
+                        poll_interval_seconds=poll_interval_seconds,
+                        lease_seconds=lease_seconds,
+                        restart_policy=restart_policy,
+                        default_timeout_seconds=default_timeout_seconds,
+                    )
+                )
+            ),
+            out=Output(ctx, "controller.pools.ensure", output),
+        )
 
 
 @pools_app.command("remove")
@@ -351,9 +294,11 @@ def remove_controller_pool(
     ),
 ) -> None:
     """Remove a configured controller worker pool."""
-    config_path = _resolve_config_path(use_workspace_instance)
-    action = RemoveControllerPoolAction(ControllerPoolConfigService())
-    run_action(lambda: action(config_path=config_path, name=name), out=Output(ctx, "controller.pools.remove", output))
+    with open_client(use_workspace_instance=use_workspace_instance) as xq:
+        run_action(
+            lambda: MutationResponse(item=for_display(xq.controller.remove_pool(name=name))),
+            out=Output(ctx, "controller.pools.remove", output),
+        )
 
 
 app.add_typer(pools_app, name="pools")

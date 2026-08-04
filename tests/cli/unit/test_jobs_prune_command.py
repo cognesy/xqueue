@@ -7,12 +7,10 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from typer.testing import CliRunner
-
+from xqueue.adapters.sqlite.database import create_session_factory, create_sqlite_engine
+from xqueue.adapters.sqlite.models import AttemptModel, Base, EventModel, JobModel, WorkerModel
+from xqueue.adapters.sqlite.session import SessionManager
 from xqueue_cli.main import app
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.infra.models import AttemptModel, Base, EventModel, JobModel, WorkerModel
-from xqueue_libs.services.database import SessionManager
-
 
 runner = CliRunner()
 
@@ -114,7 +112,7 @@ def _seed_jobs(instance_root: Path) -> None:
 
 def test_prune_dry_run_by_default(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -133,7 +131,7 @@ def test_prune_dry_run_by_default(tmp_path: Path) -> None:
 
 def test_prune_apply_deletes_failed_jobs(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -154,7 +152,7 @@ def test_prune_apply_deletes_failed_jobs(tmp_path: Path) -> None:
 
 def test_prune_apply_with_logs_deletes_log_files(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
         log_path = instance / "logs" / "job-failed.stderr.log"
@@ -173,7 +171,7 @@ def test_prune_apply_with_logs_deletes_log_files(tmp_path: Path) -> None:
 
 def test_prune_does_not_touch_running_jobs(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -192,7 +190,7 @@ def test_prune_does_not_touch_running_jobs(tmp_path: Path) -> None:
 
 def test_prune_with_older_than_filters_by_age(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -212,7 +210,7 @@ def test_prune_with_older_than_filters_by_age(tmp_path: Path) -> None:
 
 def test_prune_terminal_state_filter(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -232,7 +230,7 @@ def test_prune_terminal_state_filter(tmp_path: Path) -> None:
 
 def test_prune_tmux_output(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 

@@ -2,275 +2,178 @@
 
 ## Purpose
 
-This document defines the repository layout, layer responsibilities, dependency
-direction, and runtime data ownership for `xqueue`.
+This document defines the current repository layout, dependency direction, and
+runtime ownership for `xqueue`. `SPEC.md` remains the product source of truth.
 
-It is intentionally strict. The project is small enough that architectural
-drift would be more damaging than a small amount of ceremony.
+## Core Shape
 
-## Core Rule
+The library is capability-oriented and has one public root:
 
-`xqueue` is built around this dependency direction:
+```text
+xqueue.Xqueue
+  ├── jobs
+  ├── queues
+  ├── workers
+  ├── controller
+  ├── maintenance
+  └── workspace
+```
 
-`apps -> actions -> services`
+`Xqueue.open(...)` creates one owned runtime. Facets are lazy and cached; using
+the client as a context manager closes SQLite resources deterministically.
 
-App shells may not call services directly.
+The dependency direction is:
+
+```text
+apps/cli -> capability APIs -> capability actions and ports -> adapters
+                         \-> core invariants
+runtime composition ----------------------------------------^
+```
+
+The CLI and SDK share this graph. There is no second set of CLI-only use cases.
 
 ## Repository Layout
 
-### Runnable surfaces
-
-`apps/` contains deployable or runnable entrypoints only.
-
-Examples:
-
-- CLI commands
-- worker processes
-- controller processes
-- future API or web entrypoints, if they are ever added
-
-These modules own shell concerns only:
-
-- argument and option parsing
-- process startup
-- command registration
-- mapping exceptions to exit codes
-- selecting text versus JSON rendering
-
-They must stay slim. They construct actions, invoke them, and translate results
-to the surface being served.
-
-### Shared libraries
-
-`libs/` contains importable code only. Nothing in `libs/` is a deployment
-surface by itself.
-
-Current layer split:
-
-- `libs/actions/`
-- `libs/domain/`
-- `libs/infra/`
-- `libs/services/`
-
-### Static project assets
-
-`resources/` contains non-code project assets.
-
-Examples:
-
-- Alembic environment and migrations
-- configuration templates
-- schemas
-- static sample data if needed later
-
-Mutable queue state must never live here.
-
-### Tests
-
-Tests are organized by module and then by test level:
-
-`tests/<module>/{unit,feature,integration,regression}/`
-
-This keeps verification aligned with the code surface being exercised instead of
-collapsing everything into one flat test tree.
-
-### Local mutable runtime state
-
-`instance/` is the repository-local area for development-time mutable state.
-
-Examples:
-
-- SQLite databases used for local runs
-- local stdout/stderr capture during development
-- local runtime files created for manual testing
-
-In normal installed usage, runtime state resolves under `~/.xqueue/`. In-repo
-`instance/` remains the local development analogue, not the canonical product
-source tree.
-
-### Documentation
-
-Documentation is split by audience:
-
-- `docs/dev/` for developer workflow and architecture
-- `docs/spec/` for split specification chapters
-- `docs/user/` for operator-facing usage documentation
-
-## Layer Responsibilities
-
-### Apps
-
-`apps/` owns thin shells only.
-
-Allowed responsibilities:
-
-- parse CLI input with Typer
-- instantiate actions with explicit dependencies
-- invoke one or more actions in a simple shell flow
-- construct the shared `Output` surface and pass the command contract name
-- map domain or action exceptions to stable exit codes
-
-Forbidden responsibilities:
-
-- direct SQLAlchemy session usage
-- direct subprocess execution
-- filesystem or platform service orchestration
-- embedding domain rules or state-transition logic
-- calling services directly
-
-Valid flow:
-
-`CLI command -> action -> service`
-
-Invalid flow:
-
-`CLI command -> service`
-
-### Actions
-
-`libs/actions/` contains use cases.
-
-Each action should be a small, explicit unit representing one capability such
-as:
-
-- enqueue a job
-- list jobs
-- show job details
-- claim one runnable job
-- record a worker heartbeat
-- cancel a job
-- recover stale leases
-
-Actions receive dependencies through the constructor. They coordinate domain
-rules, call services, and return domain-layer results.
-
-Actions may:
-
-- validate application-level invariants
-- orchestrate multiple services
-- define state-transition logic
-- translate low-level failures into domain-meaningful errors
-
-Actions may not:
-
-- own CLI formatting
-- own Rich rendering
-- directly behave like infrastructure singletons hidden behind globals
-
-### Services
-
-`libs/services/` contains context-agnostic integrations with infrastructure and
-system boundaries.
-
-Examples:
-
-- process execution and process-group control
-- log file capture and path allocation
-- configuration loading support
-- clock and identifier providers
-- platform service manager integrations
-- repository/query interfaces implemented over infrastructure
-
-Services are reusable across shells. They should not know whether they are
-being called from a CLI command, worker process, or future API surface.
-
-### Domain
-
-`libs/domain/` contains domain-layer types and contracts.
-
-Examples:
-
-- enums for job state and worker state
-- Pydantic models for job, attempt, and worker views
-- request and response envelopes
-- structured error schemas
-
-Domain models are not ORM models.
-
-### Infrastructure
-
-`libs/infra/` contains low-level implementation details for persistence and
-runtime support.
-
-Examples:
-
-- SQLAlchemy ORM models
-- SQLite engine and session setup
-- Alembic wiring
-- repository implementations
-- low-level path helpers tied to concrete storage details
-
-Infrastructure should not leak into app shells.
-
-## Output Boundaries
-
-Structured output paths must remain separate from human-readable rendering.
-
-Rules:
-
-- Rich is only for human-readable text output
-- `json`, `jsonl`, and `toon` must bypass Rich entirely
-- JSON responses should be built from domain-layer models, not presentation
-  models
-- presentation-only fields must not leak into JSON output
-
-Practical implication:
-
-- app shells choose the command contract and local output override
-- actions return domain results
-- the `Output` object owns TOON/JSON/JSONL/text dispatch
-- JSON serialization uses stable domain contracts directly
-
-## Persistence Boundaries
-
-SQLite is the canonical mutable state store.
-
-Rules:
-
-- queue state lives in SQLite, not YAML
-- stdout/stderr logs live in files, not SQLite blobs
-- SQLAlchemy models stay under infrastructure
-- Pydantic models stay under domain
-- Alembic owns schema evolution from the start
-
-No module should treat ORM objects as public response objects.
-
-## Runtime Ownership
-
-`xqueue` owns only the artifacts it creates.
-
-This applies to:
-
-- SQLite files
-- runtime files
-- stdout/stderr logs
-- generated wrappers
-- managed `launchd` plists
-- managed `systemd --user` unit files
-
-`xqueue` must not mutate unmanaged system artifacts.
-
-## Process Execution Model
-
-Jobs are command-first and shell-first in v1.
-
-Workers execute subprocesses and must manage process groups so timeout and
-cancellation can terminate the whole command tree.
-
-That logic belongs in services invoked by actions, not in CLI shells.
-
-## Implementation Conventions
-
-When adding code:
-
-1. Put runnable code in `apps/` only if it is an entrypoint.
-2. Put a use case in `libs/actions/` if it represents an operator-visible or
-   system capability.
-3. Put infrastructure integrations in `libs/services/` or `libs/infra/`
-   depending on whether the concern is an abstract integration or a concrete
-   low-level implementation.
-4. Put response and validation schemas in `libs/domain/`.
-5. Keep state-transition and orchestration logic out of app shells.
-
-When in doubt, bias toward preserving the dependency direction and keeping app
-surfaces thin.
+- `apps/cli/`: Typer shells, envelopes, output contracts, and renderers
+- `libs/jobs/`: enqueue, inspection, logs, pruning, and job transitions
+- `libs/queues/`: queue inspection and intake control
+- `libs/workers/`: claiming, attempts, execution, process groups, and workers
+- `libs/controller/`: pools, supervision, and launchd/systemd adapters
+- `libs/maintenance/`: health, recovery, metrics, retention, and DB maintenance
+- `libs/workspace/`: configuration, runtime paths, hooks, and local reset
+- `libs/core/`: only cross-capability errors and date/time helpers; each
+  capability owns its own `models.py`
+- `libs/runtime/`: lifecycle, composition, resources, and structured logging
+- `libs/adapters/sqlite/`: SQLAlchemy ORM, engine, and session implementation
+- `resources/`: Alembic migrations and packaged static assets
+- `tests/`: behavior and boundary verification
+- `.xqueue/`: the workspace directory -- marker, config, database,
+  run and log roots -- created by `xq workspace init`
+
+The former global `actions`, `domain`, `infra`, and `services` packages are not
+compatibility surfaces and must remain physically absent.
+
+## Capability Boundary
+
+Each capability may contain the pieces it needs: public models, a typed API
+facet, actions, ports, stores, and focused mechanics. A capability should expose
+workflow-shaped operations rather than generic repositories or managers.
+
+Cross-capability code belongs in `core` only when it is a stable invariant used
+by multiple capabilities. Concrete application wiring belongs in `runtime`, not
+in module-level singletons.
+
+## CLI Boundary
+
+`apps/cli/` owns all shell concerns:
+
+- Typer parsing and command registration
+- stable list, detail, mutation, and error envelopes
+- output field selection
+- TOON, JSON, JSONL, text, and tmux rendering
+- exit-code translation
+
+Rich is used only for text output. Machine-readable paths bypass Rich. Library
+facets return typed values and never import `xqueue_cli`.
+
+## Persistence Boundary
+
+SQLite is the canonical mutable state store. The engine, the session factory,
+and the ORM models are sealed inside `libs/adapters/sqlite/`. SQLAlchemy query
+construction is not sealed: it is allowed in the capability persistence modules
+named by the `xqueue-no-sqlalchemy-outside-persistence` Semgrep allowlist and in
+the composition root, and is an error in every `api.py`, `models.py`, and
+`actions.py`, in `libs/core/`, and in the CLI. ORM objects are never public SDK
+or CLI response types.
+Pydantic models stay separate from ORM models. Alembic owns schema evolution,
+and the SQLite engine enables WAL, foreign keys, explicit transactions, and a
+sensible busy timeout.
+
+Job stdout and stderr stay in owned files, not database blobs.
+
+## Configuration Boundary
+
+Configuration is composed once, by `libs/workspace/loader.py`, which is the only
+module that may import the configuration library. Callers pass a `ConfigInputs`
+-- a replacement file, an environment name, and dotted-path overrides -- and get
+an `EffectiveConfig` back. No library type reaches a caller, and a failure to
+compose surfaces as `ConfigurationError`, never as a foreign exception.
+
+The layer order, base first, is:
+
+1. the packaged `config.default.yaml`, or an explicit file that *replaces* it
+   (`--config`, `XQUEUE_CONFIG_PATH`, or the SDK's `config_path`)
+2. a named environment overlay layered over the default (`--env`, `XQUEUE_ENV`)
+3. the user config directory
+4. `<workspace>/config.yaml`
+5. environment variables, which are read only if they carry the nested
+   delimiter `__` -- so the flat `XQUEUE_HOME`, `XQUEUE_ROOT`, `XQUEUE_DB_PATH`,
+   `XQUEUE_LOG_LEVEL`, and `XQUEUE_LOG_FORMAT` are invisible to this layer
+6. `--set path=value`, or the SDK's `overrides`
+
+`EffectiveConfig.layers` reports that chain and which entries applied, so
+`xq config show` can say where a value came from without a second mechanism.
+
+Two rules keep this shape: environment access is confined to the resolver, the
+loader, and the process adapters; and the workspace root is decided once, in
+runtime composition, then handed down -- a capability that imports the resolver
+could answer "which workspace am I in" differently from the runtime that opened
+it.
+
+## State Ownership
+
+Which module may write which table is recorded in
+[`plane-map.md`](plane-map.md), and today the answer is not one module per
+table. `queues`, `workers`, the metrics file, and the launchd and systemd
+artifacts each have a single writer. The `jobs` table does not: it is written
+by `jobs/store.py`, `jobs/pruning.py`, `queues/store.py`, `workers/store.py`,
+`workers/attempts.py`, `maintenance/recovery.py`, and `maintenance/retention.py`.
+The `attempts` table is written by four of those. `events` is append-only from
+five modules, which is acceptable for a log.
+
+Each of those writes is a legitimate job-lifecycle transition — claim,
+complete, cancel, expire a lease, delete — inside one action's transaction
+against one SQLite file with WAL and `foreign_keys=ON`, so the risk today is
+low. It is not zero, and it grows with every capability that finds it
+convenient to reach for `JobModel`: the SQLAlchemy allowlist governs which
+modules may build queries and says nothing about which tables each may touch.
+
+`maintenance/health.py` imports `WorkerModel` but only reads it
+(`libs/maintenance/health.py:148`), so it is not a second writer.
+
+Fixing this is owned by `xqueue-57w.1`, not by the module that found it. The
+smallest useful seam is one declared writer per table, enforced the way the
+SQLAlchemy allowlist is enforced — a rule naming which persistence module may
+import which ORM model, verified by planting a `JobModel` import in a
+capability that does not own it.
+
+## Process And Platform Boundaries
+
+Worker subprocess and process-group behavior belongs to the workers capability.
+Timeout and cancellation must target the entire process group. Controller child
+process and service-manager behavior belongs to the controller capability.
+
+The controller supervises worker pools; it is not a scheduler. Native adapters
+modify only launchd or systemd artifacts generated and owned by `xqueue`.
+
+## Enforced Rules
+
+Ruff, Import Linter, the Python AST boundary checker, Semgrep, and explicit
+absence tests enforce:
+
+- core independence
+- no library dependency on the CLI
+- no direct CLI dependency on SQLite adapters
+- Rich and Typer confinement
+- SQLAlchemy confinement to the SQLite adapter
+- subprocess confinement to worker/controller process adapters
+- the configuration library reachable only from `xqueue.workspace.loader`
+- environment reads confined to workspace resolution, the config loader, and
+  the process adapters
+- capabilities never importing the workspace resolver: a decided root is passed
+  down, never rediscovered
+- absence of the former global technical-layer packages
+
+When adding behavior, start in the capability whose operator concept owns it,
+add or reuse a narrow port for an external boundary, wire the concrete adapter
+once in runtime composition, and keep presentation in the CLI.

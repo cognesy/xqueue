@@ -5,12 +5,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from typer.testing import CliRunner
-
+from xqueue.adapters.sqlite.database import create_session_factory, create_sqlite_engine
+from xqueue.adapters.sqlite.models import Base, WorkerModel
+from xqueue.adapters.sqlite.session import SessionManager
 from xqueue_cli.main import app
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.infra.models import Base, WorkerModel
-from xqueue_libs.services.database import SessionManager
-
 
 runner = CliRunner()
 
@@ -40,7 +38,7 @@ def _seed_worker(database_path: Path) -> None:
 
 def test_workers_list_returns_json(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_worker(instance / "xqueue.db")
 
@@ -57,13 +55,19 @@ def test_workers_list_returns_json(tmp_path: Path) -> None:
 
 def test_workers_pause_resume_drain_stop_return_mutation_json(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_worker(instance / "xqueue.db")
 
-        pause_result = runner.invoke(app, ["workers", "pause", "worker-cli", "--output", "json", "--workspace-instance"])
-        resume_result = runner.invoke(app, ["workers", "resume", "worker-cli", "--output", "json", "--workspace-instance"])
-        drain_result = runner.invoke(app, ["workers", "drain", "worker-cli", "--output", "json", "--workspace-instance"])
+        pause_result = runner.invoke(
+            app, ["workers", "pause", "worker-cli", "--output", "json", "--workspace-instance"]
+        )
+        resume_result = runner.invoke(
+            app, ["workers", "resume", "worker-cli", "--output", "json", "--workspace-instance"]
+        )
+        drain_result = runner.invoke(
+            app, ["workers", "drain", "worker-cli", "--output", "json", "--workspace-instance"]
+        )
         stop_result = runner.invoke(app, ["workers", "stop", "worker-cli", "--output", "json", "--workspace-instance"])
 
         assert pause_result.exit_code == 0

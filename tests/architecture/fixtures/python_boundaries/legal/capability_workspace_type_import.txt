@@ -1,0 +1,3 @@
+libs/jobs/good.py
+---
+from xqueue.workspace.paths import Workspace

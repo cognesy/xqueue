@@ -7,10 +7,9 @@ import click
 import pytest
 from toon import decode
 from typer import Context
-
+from xqueue.jobs.models import JobState, JobSummary
+from xqueue_cli.contracts import ErrorDetail, ErrorResponse, ListResponse
 from xqueue_cli.output import Output, OutputFormat
-from xqueue_libs.domain.models import JobState, JobSummary
-from xqueue_libs.domain.responses import ErrorDetail, ErrorResponse, ListResponse
 
 
 def _build_context(output: OutputFormat) -> Context:

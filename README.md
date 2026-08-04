@@ -16,20 +16,21 @@ work and enqueue command jobs, while `xq` workers own execution and state.
 ## Example Usage
 
 ```sh
-uv run xq enqueue --workspace-instance --queue default -- /bin/sh -lc 'echo hello'
-uv run xq jobs list --workspace-instance
-uv run xq worker run --workspace-instance --queue default --execute-claimed
-uv run xq -o json jobs show <job-id> --workspace-instance
-uv run xq jobs tail <job-id> --workspace-instance --stream stdout
+uv run xq workspace init
+uv run xq enqueue --queue default -- /bin/sh -lc 'echo hello'
+uv run xq jobs list
+uv run xq worker run --queue default --execute-claimed
+uv run xq -o json jobs show <job-id>
+uv run xq jobs tail <job-id> --stream stdout
 ```
 
 Operational commands include:
 
 ```sh
-uv run xq queues stats --workspace-instance
-uv run xq workers list --workspace-instance
-uv run xq recover stale-leases --workspace-instance
-uv run xq doctor --workspace-instance
+uv run xq queues stats
+uv run xq workers list
+uv run xq recover stale-leases
+uv run xq doctor
 ```
 
 ## How It Works
@@ -45,9 +46,9 @@ claiming a job, stale lease recovery can make the job runnable again.
 
 ## Documentation
 
-- Operator guides: [docs/user/README.md](/Users/ddebowczyk/projects/xqueue/docs/user/README.md)
-- Developer workflow: [docs/dev/README.md](/Users/ddebowczyk/projects/xqueue/docs/dev/README.md)
-- Product specification: [SPEC.md](/Users/ddebowczyk/projects/xqueue/SPEC.md)
+- Operator guides: [docs/user/README.md](docs/user/README.md)
+- Developer workflow: [docs/dev/README.md](docs/dev/README.md)
+- Product specification: [SPEC.md](SPEC.md)
 
 ## Development
 
@@ -75,26 +76,75 @@ Available formats:
 - `json`
 - `jsonl`
 - `text`
+- `tmux`
 
-See [SPEC.md](/Users/ddebowczyk/projects/xqueue/SPEC.md) for the product
-specification and [xqueue-spec-implementation.md](/Users/ddebowczyk/projects/xqueue/docs/dev/plans/xqueue-spec-implementation.md)
-for the current implementation plan.
+See [SPEC.md](SPEC.md) for the product specification.
+
+## Python SDK
+
+The public library starts at one lifecycle-safe root, `Xqueue`, with cached
+capability facets. Use it as a context manager so its SQLite resources are
+disposed deterministically:
+
+```python
+from pathlib import Path
+
+from xqueue import Xqueue
+
+with Xqueue.open(workspace_root=Path.cwd(), use_workspace_instance=True) as xq:
+    job = xq.jobs.enqueue(queue="default", command="echo hello from the SDK")
+    current = xq.jobs.show(job.id)
+```
+
+`enqueue` also accepts the validated model directly, for callers that build it
+themselves:
+
+```python
+from xqueue.jobs.models import EnqueueJobInput
+
+job = xq.jobs.enqueue(EnqueueJobInput(queue="default", command="echo hi"))
+```
+
+The public facets are `jobs`, `queues`, `workers`, `controller`, `maintenance`,
+and `workspace`. They return typed domain values; CLI envelopes and rendering
+remain owned by `apps/cli/`.
+
+`open` takes the same configuration inputs the CLI exposes as `--config`,
+`--env`, and `--set` -- a file that replaces the shipped defaults, an overlay
+name, and dotted-path overrides:
+
+```python
+with Xqueue.open(
+    workspace_root=Path.cwd(),
+    env_name="staging",
+    overrides={"worker.retry_delay_seconds": "30"},
+) as xq:
+    settings = xq.workspace.config()
+```
+
+Anything that will not compose raises `ConfigurationError`.
+
+Embedders install `xqueue` and get the SDK alone. Operators install
+`xqueue[cli]`, which adds Typer, Rich, and python-toon for the `xq` command.
 
 ## Tech Stack
 
 - Python 3.11+
-- Typer for the CLI
-- Rich for human-readable text output
+- Typer for the CLI (the `cli` extra)
+- Rich for human-readable text output (the `cli` extra)
 - Pydantic for domain and response models
 - SQLAlchemy and Alembic with SQLite for durable state
-- `~/.xqueue/` for config, state, runtime, and log paths (`XQUEUE_HOME` to override)
-- PyYAML for static configuration
+- `.xqueue/` in a project, or `~/.xqueue/` outside one (`XQUEUE_HOME` to override),
+  for config, state, runtime, and log paths
+- `xcfg` for layered configuration, behind one adapter
+- PyYAML for the logging profile and controller pool files
 - structlog for application logs
 - python-toon for compact agent-facing output
 - pytest for tests
 
-The implementation keeps Typer command shells in `apps/cli/`, use-case actions
-in `libs/actions/`, domain models in `libs/domain/`, database models and session
-setup in `libs/infra/`, execution, worker, controller, and platform integrations
-in `libs/services/`, and Alembic migrations plus packaged skills in
+The implementation keeps Typer shells and all rendering in `apps/cli/`.
+`libs/` is organized by public capabilities (`jobs`, `queues`, `workers`,
+`controller`, `maintenance`, and `workspace`), with shared invariants in
+`core/`, runtime composition in `runtime/`, and SQLite sealed behind
+`adapters/sqlite/`. Alembic migrations and packaged static assets live in
 `resources/`.

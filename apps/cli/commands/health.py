@@ -2,18 +2,11 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import typer
-
+from xqueue_cli.client import open_client
+from xqueue_cli.contracts import DetailResponse
 from xqueue_cli.output import Output, OutputFormat
 from xqueue_cli.runtime import run_action
-from xqueue_libs.actions.operations import HealthAction
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.services.config import ConfigLoader
-from xqueue_libs.services.database import SessionManager
-from xqueue_libs.services.database_maintenance import DatabaseMaintenanceService
-from xqueue_libs.services.health import HealthService
 
 
 def register(app: typer.Typer) -> None:
@@ -29,15 +22,8 @@ def register(app: typer.Typer) -> None:
         ),
     ) -> None:
         """Summarize database, queue, worker, and lease health."""
-        config = ConfigLoader().load(
-            workspace_root=Path.cwd(),
-            use_workspace_instance=use_workspace_instance,
-        )
-        engine = create_sqlite_engine(config.paths.database_path)
-        session_factory = create_session_factory(engine)
-        action = HealthAction(
-            SessionManager(session_factory),
-            HealthService(),
-            DatabaseMaintenanceService(engine, database_path=config.paths.database_path),
-        )
-        run_action(action, out=Output(ctx, "health", output))
+        with open_client(use_workspace_instance=use_workspace_instance) as client:
+            run_action(
+                lambda: DetailResponse(item=client.maintenance.health()),
+                out=Output(ctx, "health", output),
+            )

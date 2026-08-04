@@ -78,7 +78,7 @@ uv run xq -o json config show
 In repo-local development, prefer:
 
 ```sh
-uv run xq -o json config show --workspace-instance
+uv run xq -o json config show
 ```
 
 2. Enqueue work:
@@ -255,13 +255,13 @@ fields.
 
 ## Repo-Local Development Note
 
-When operating inside this repository, prefer `--workspace-instance` so all
-state stays under `instance/`:
+This repository has its own workspace, so commands run here keep all state
+under `.xqueue/` with no flag. Run `xq workspace init` if it is missing.
 
-- `instance/xqueue.db`
-- `instance/run/`
-- `instance/logs/`
-- `instance/config.yaml`
+- `.xqueue/xqueue.db`
+- `.xqueue/run/`
+- `.xqueue/logs/`
+- `.xqueue/config.yaml`
 
 ## References
 

@@ -1,0 +1,4 @@
+apps/cli/commands/jobs.py
+---
+from xqueue.jobs.models import JobDetail
+from xqueue.maintenance.models import DoctorReport

@@ -1,0 +1,25 @@
+---
+active:
+  profile: null
+  strategy: null
+catalog_lock: catalog_364d5c081082634fb91cd83b
+created_at: '2026-08-03T17:11:34.477013Z'
+created_by:
+  id: codex
+  kind: agent
+id: workspace_a952488bb2123b14ed3b6d04
+records:
+  assertions: .xqa/assertions
+  changes: .xqa/changes
+  decisions: .xqa/decisions
+  downstream: .xqa/downstream
+  observations: .xqa/observations
+  profiles: .xqa/profiles
+  reviews: .xqa/reviews
+  strategies: .xqa/strategies
+repository:
+  fingerprint: >-
+    sha256:d21d48f1050cc9ab1f511a218638d4ca369f2e85d26da29fdd7df9e80c88b131
+  name: xqueue
+  root: /Users/ddebowczyk/projects/_tools/xqueue
+schema: xqa.workspace.v1

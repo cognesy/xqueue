@@ -1,0 +1,48 @@
+[importlinter]
+root_package = capability_arch
+include_external_packages = True
+
+[importlinter:contract:capability-dag]
+name = Capabilities depend downward only
+type = layers
+layers =
+    capability_arch.maintenance
+    capability_arch.controller
+    capability_arch.workers
+    capability_arch.queues
+    capability_arch.jobs
+
+[importlinter:contract:workspace-independent-of-capabilities]
+name = Workspace and configuration do not depend on runtime capabilities
+type = forbidden
+source_modules =
+    capability_arch.workspace
+forbidden_modules =
+    capability_arch.controller
+    capability_arch.jobs
+    capability_arch.maintenance
+    capability_arch.queues
+    capability_arch.workers
+
+[importlinter:contract:capabilities-do-not-build-the-runtime]
+name = Capabilities do not import the runtime composition root
+type = forbidden
+source_modules =
+    capability_arch.controller
+    capability_arch.jobs
+    capability_arch.maintenance
+    capability_arch.queues
+    capability_arch.workers
+    capability_arch.workspace
+forbidden_modules =
+    capability_arch.runtime.composition
+
+[importlinter:contract:config-library-confined-to-its-adapter]
+name = Only the workspace loader imports the configuration library
+type = forbidden
+source_modules =
+    capability_arch
+forbidden_modules =
+    xcfg
+ignore_imports =
+    capability_arch.workspace -> xcfg

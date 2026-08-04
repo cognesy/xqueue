@@ -4,7 +4,15 @@ from __future__ import annotations
 
 from enum import IntEnum
 
-from xqueue_libs.domain.errors import ConflictError, NotFoundError, OperationTimeoutError, RuntimeExecutionError, ValidationError, XqueueError
+from xqueue.core.errors import (
+    ConfigurationError,
+    ConflictError,
+    NotFoundError,
+    OperationTimeoutError,
+    RuntimeExecutionError,
+    ValidationError,
+    XqueueError,
+)
 
 
 class ExitCode(IntEnum):
@@ -19,7 +27,9 @@ class ExitCode(IntEnum):
 
 def map_error_to_exit_code(error: XqueueError) -> ExitCode:
     """Map domain/application errors to stable shell exit codes."""
-    if isinstance(error, ValidationError):
+    # Configuration that will not compose is a bad invocation, which is what
+    # exit code 2 already means to a shell.
+    if isinstance(error, ValidationError | ConfigurationError):
         return ExitCode.VALIDATION_ERROR
     if isinstance(error, NotFoundError):
         return ExitCode.NOT_FOUND

@@ -1,0 +1,3 @@
+apps/cli/main.py
+---
+from xqueue.runtime.logging import configure_logging

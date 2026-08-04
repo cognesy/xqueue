@@ -5,19 +5,17 @@ from pathlib import Path
 
 from sqlalchemy import text
 from typer.testing import CliRunner
-
+from xqueue.adapters.sqlite.database import create_sqlite_engine
+from xqueue.adapters.sqlite.models import Base
 from xqueue_cli.exit_codes import ExitCode
 from xqueue_cli.main import app
-from xqueue_libs.infra.database import create_sqlite_engine
-from xqueue_libs.infra.models import Base
-
 
 runner = CliRunner()
 
 
 def test_enqueue_command_returns_json_mutation_response(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         engine = create_sqlite_engine(instance / "xqueue.db")
         Base.metadata.create_all(engine)
@@ -49,7 +47,7 @@ def test_enqueue_command_returns_json_mutation_response(tmp_path: Path) -> None:
 
 def test_enqueue_command_parses_execution_options_and_env(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         work_dir = Path.cwd() / "work"
         work_dir.mkdir()
@@ -98,7 +96,9 @@ def test_enqueue_command_parses_execution_options_and_env(tmp_path: Path) -> Non
         engine = create_sqlite_engine(database_path)
         with engine.connect() as connection:
             row = connection.execute(
-                text("SELECT command, cwd, env, timeout_seconds, max_attempts, created_by FROM jobs WHERE id = :job_id"),
+                text(
+                    "SELECT command, cwd, env, timeout_seconds, max_attempts, created_by FROM jobs WHERE id = :job_id"
+                ),
                 {"job_id": item["id"]},
             ).one()
         engine.dispose()
@@ -113,7 +113,7 @@ def test_enqueue_command_parses_execution_options_and_env(tmp_path: Path) -> Non
 
 def test_enqueue_command_returns_validation_error_for_missing_command(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         engine = create_sqlite_engine(instance / "xqueue.db")
         Base.metadata.create_all(engine)
@@ -141,7 +141,7 @@ def test_enqueue_command_returns_validation_error_for_missing_command(tmp_path: 
 
 def test_enqueue_command_returns_validation_error_for_invalid_env_item(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         engine = create_sqlite_engine(instance / "xqueue.db")
         Base.metadata.create_all(engine)

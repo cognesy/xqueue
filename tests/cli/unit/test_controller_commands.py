@@ -4,18 +4,16 @@ import json
 from pathlib import Path
 
 from typer.testing import CliRunner
-
+from xqueue.controller.models import ManagedControllerInstallView, ManagedControllerStatusView, ServiceManagerKind
+from xqueue.runtime.composition import Runtime
 from xqueue_cli.main import app
-from xqueue_cli.commands import controller as controller_commands
-from xqueue_libs.domain.models import ManagedControllerInstallView, ManagedControllerStatusView, ServiceManagerKind
-
 
 runner = CliRunner()
 
 
 def test_controller_status_returns_stopped_json_without_runtime_state(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        Path("instance").mkdir(exist_ok=True)
+        Path(".xqueue").mkdir(exist_ok=True)
 
         result = runner.invoke(app, ["controller", "status", "--output", "json", "--workspace-instance"])
 
@@ -27,7 +25,7 @@ def test_controller_status_returns_stopped_json_without_runtime_state(tmp_path: 
 
 def test_controller_run_returns_json_with_bounded_supervision_loop(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        Path("instance").mkdir(exist_ok=True)
+        Path(".xqueue").mkdir(exist_ok=True)
 
         result = runner.invoke(
             app,
@@ -48,12 +46,12 @@ def test_controller_run_returns_json_with_bounded_supervision_loop(tmp_path: Pat
         assert payload["item"]["state"] == "stopped"
         assert payload["item"]["process_id"] is not None
         assert payload["item"]["pools"] == []
-        assert Path("instance/run/controller-default.status.json").exists()
+        assert Path(".xqueue/run/controller-default.status.json").exists()
 
 
 def test_controller_pause_resume_drain_restart_stop_return_mutation_json(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
 
         pause_result = runner.invoke(app, ["controller", "pause-intake", "--output", "json", "--workspace-instance"])
@@ -136,18 +134,30 @@ def test_controller_managed_commands_return_json(tmp_path: Path, monkeypatch) ->
                 details="running",
             )
 
-    monkeypatch.setattr(controller_commands, "_build_managed_service", lambda platform: FakeManagedService())
+    monkeypatch.setattr(Runtime, "managed_controller_service", lambda self, platform=None: FakeManagedService())
 
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
 
-        install = runner.invoke(app, ["controller", "install", "--platform", "launchd", "--output", "json", "--workspace-instance"])
-        start = runner.invoke(app, ["controller", "start", "--platform", "launchd", "--output", "json", "--workspace-instance"])
-        status = runner.invoke(app, ["controller", "status", "--platform", "launchd", "--output", "json", "--workspace-instance"])
-        restart = runner.invoke(app, ["controller", "restart", "--platform", "launchd", "--output", "json", "--workspace-instance"])
-        stop = runner.invoke(app, ["controller", "stop", "--platform", "launchd", "--output", "json", "--workspace-instance"])
-        uninstall = runner.invoke(app, ["controller", "uninstall", "--platform", "launchd", "--output", "json", "--workspace-instance"])
+        install = runner.invoke(
+            app, ["controller", "install", "--platform", "launchd", "--output", "json", "--workspace-instance"]
+        )
+        start = runner.invoke(
+            app, ["controller", "start", "--platform", "launchd", "--output", "json", "--workspace-instance"]
+        )
+        status = runner.invoke(
+            app, ["controller", "status", "--platform", "launchd", "--output", "json", "--workspace-instance"]
+        )
+        restart = runner.invoke(
+            app, ["controller", "restart", "--platform", "launchd", "--output", "json", "--workspace-instance"]
+        )
+        stop = runner.invoke(
+            app, ["controller", "stop", "--platform", "launchd", "--output", "json", "--workspace-instance"]
+        )
+        uninstall = runner.invoke(
+            app, ["controller", "uninstall", "--platform", "launchd", "--output", "json", "--workspace-instance"]
+        )
 
         assert install.exit_code == 0
         assert start.exit_code == 0
@@ -166,7 +176,7 @@ def test_controller_managed_commands_return_json(tmp_path: Path, monkeypatch) ->
 
 def test_controller_pool_commands_mutate_workspace_config_idempotently(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        Path("instance").mkdir(exist_ok=True)
+        Path(".xqueue").mkdir(exist_ok=True)
 
         ensure = runner.invoke(
             app,
@@ -197,8 +207,12 @@ def test_controller_pool_commands_mutate_workspace_config_idempotently(tmp_path:
             ],
         )
         listed = runner.invoke(app, ["controller", "pools", "list", "--output", "json", "--workspace-instance"])
-        removed = runner.invoke(app, ["controller", "pools", "remove", "xpm", "--output", "json", "--workspace-instance"])
-        removed_again = runner.invoke(app, ["controller", "pools", "remove", "xpm", "--output", "json", "--workspace-instance"])
+        removed = runner.invoke(
+            app, ["controller", "pools", "remove", "xpm", "--output", "json", "--workspace-instance"]
+        )
+        removed_again = runner.invoke(
+            app, ["controller", "pools", "remove", "xpm", "--output", "json", "--workspace-instance"]
+        )
 
         assert ensure.exit_code == 0
         assert ensure_again.exit_code == 0

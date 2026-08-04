@@ -6,16 +6,12 @@ import shlex
 from pathlib import Path
 
 import typer
-
+from xqueue.core.errors import ValidationError
+from xqueue.jobs.models import EnqueueJobInput
+from xqueue_cli.client import open_client
+from xqueue_cli.contracts import MutationResponse
 from xqueue_cli.output import Output, OutputFormat
 from xqueue_cli.runtime import run_action
-from xqueue_libs.actions.jobs import EnqueueJobAction
-from xqueue_libs.domain.errors import ValidationError
-from xqueue_libs.domain.models import EnqueueJobInput
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.services.config import ConfigLoader
-from xqueue_libs.services.database import SessionManager
-from xqueue_libs.services.jobs import JobService
 
 
 def _parse_env_items(items: list[str]) -> dict[str, str] | None:
@@ -56,13 +52,7 @@ def register(app: typer.Typer) -> None:
         ),
     ) -> None:
         """Persist a queued command job."""
-        config = ConfigLoader().load(
-            workspace_root=Path.cwd(),
-            use_workspace_instance=use_workspace_instance,
-        )
-        engine = create_sqlite_engine(config.paths.database_path)
-        session_factory = create_session_factory(engine)
-        action = EnqueueJobAction(SessionManager(session_factory), JobService())
+        xq = open_client(use_workspace_instance=use_workspace_instance)
 
         def execute() -> object:
             if not ctx.args:
@@ -79,6 +69,9 @@ def register(app: typer.Typer) -> None:
                 max_attempts=max_attempts,
                 created_by=created_by,
             )
-            return action(payload)
+            return MutationResponse(item=xq.jobs.enqueue(payload))
 
-        run_action(execute, out=Output(ctx, "enqueue", output))
+        try:
+            run_action(execute, out=Output(ctx, "enqueue", output))
+        finally:
+            xq.close()

@@ -5,11 +5,12 @@ product specification.
 
 Current developer references:
 
-- [architecture.md](/Users/ddebowczyk/projects/xqueue/docs/dev/architecture.md)
-- [development.md](/Users/ddebowczyk/projects/xqueue/docs/dev/development.md)
-- [xqueue-x6x.md](/Users/ddebowczyk/projects/xqueue/docs/dev/retrospectives/xqueue-x6x.md)
-- [xqueue-7th.md](/Users/ddebowczyk/projects/xqueue/docs/dev/retrospectives/xqueue-7th.md)
-- [xqueue-spec-implementation.md](/Users/ddebowczyk/projects/xqueue/docs/dev/plans/xqueue-spec-implementation.md)
+- [architecture.md](architecture.md)
+- [development.md](development.md)
+- [output.md](output.md)
+- [xqueue-x6x.md](retrospectives/xqueue-x6x.md)
+- [xqueue-7th.md](retrospectives/xqueue-7th.md)
+- [capability/SDK refactor plan](../plans/20260803-182325-capability-sdk-refactor/README.md)
 
 Use `docs/spec/` for the split product spec. Use `docs/user/` for operator
 guides and runnable examples.

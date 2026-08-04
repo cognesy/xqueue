@@ -6,12 +6,10 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from typer.testing import CliRunner
-
+from xqueue.adapters.sqlite.database import create_session_factory, create_sqlite_engine
+from xqueue.adapters.sqlite.models import AttemptModel, Base, JobModel, WorkerModel
+from xqueue.adapters.sqlite.session import SessionManager
 from xqueue_cli.main import app
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.infra.models import AttemptModel, Base, JobModel, WorkerModel
-from xqueue_libs.services.database import SessionManager
-
 
 runner = CliRunner()
 
@@ -122,7 +120,7 @@ def _seed_running_job_with_logs(instance_root: Path, *, write_logs: bool) -> Non
 
 def test_health_tmux_output(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_basic(instance)
 
@@ -139,7 +137,7 @@ def test_health_tmux_output(tmp_path: Path) -> None:
 
 def test_jobs_list_tmux_output(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_basic(instance)
 
@@ -157,7 +155,7 @@ def test_jobs_list_tmux_output(tmp_path: Path) -> None:
 
 def test_jobs_list_tmux_output_with_state_filter(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_basic(instance)
 
@@ -174,7 +172,7 @@ def test_jobs_list_tmux_output_with_state_filter(tmp_path: Path) -> None:
 
 def test_controller_status_tmux_output(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_basic(instance)
 
@@ -190,7 +188,7 @@ def test_controller_status_tmux_output(tmp_path: Path) -> None:
 
 def test_jobs_pane_tmux_output_for_silent_running_job(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_running_job_with_logs(instance, write_logs=False)
 
@@ -207,7 +205,7 @@ def test_jobs_pane_tmux_output_for_silent_running_job(tmp_path: Path) -> None:
 
 def test_jobs_pane_tmux_output_for_running_job_with_logs(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_running_job_with_logs(instance, write_logs=True)
 

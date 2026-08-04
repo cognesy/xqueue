@@ -5,12 +5,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from typer.testing import CliRunner
-
+from xqueue.adapters.sqlite.database import create_session_factory, create_sqlite_engine
+from xqueue.adapters.sqlite.models import Base, JobModel
+from xqueue.adapters.sqlite.session import SessionManager
 from xqueue_cli.main import app
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.infra.models import Base, JobModel
-from xqueue_libs.services.database import SessionManager
-
 
 runner = CliRunner()
 
@@ -42,7 +40,7 @@ def _seed_job(database_path: Path) -> None:
 
 def test_jobs_list_default_toon_contract_is_stable(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_job(instance / "xqueue.db")
 
@@ -55,7 +53,7 @@ def test_jobs_list_default_toon_contract_is_stable(tmp_path: Path) -> None:
 
 def test_global_output_json_propagates_to_jobs_list(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_job(instance / "xqueue.db")
 
@@ -70,7 +68,7 @@ def test_global_output_json_propagates_to_jobs_list(tmp_path: Path) -> None:
 
 def test_global_output_jsonl_propagates_to_jobs_list(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_job(instance / "xqueue.db")
 
@@ -86,7 +84,7 @@ def test_global_output_jsonl_propagates_to_jobs_list(tmp_path: Path) -> None:
 
 def test_global_fields_option_filters_jobs_list_toon_output(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_job(instance / "xqueue.db")
 
@@ -100,7 +98,7 @@ def test_global_fields_option_filters_jobs_list_toon_output(tmp_path: Path) -> N
 
 def test_jobs_show_default_toon_detail_contract_is_stable(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_job(instance / "xqueue.db")
 
@@ -116,7 +114,7 @@ def test_jobs_show_default_toon_detail_contract_is_stable(tmp_path: Path) -> Non
 
 def test_enqueue_default_toon_mutation_contract_is_stable(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         engine = create_sqlite_engine(instance / "xqueue.db")
         Base.metadata.create_all(engine)
@@ -144,7 +142,7 @@ def test_enqueue_default_toon_mutation_contract_is_stable(tmp_path: Path) -> Non
 
 def test_jobs_show_default_toon_error_contract_is_stable(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_job(instance / "xqueue.db")
 

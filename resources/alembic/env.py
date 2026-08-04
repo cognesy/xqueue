@@ -5,11 +5,10 @@ from pathlib import Path
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
-
-from xqueue_libs.infra.database import sqlite_url
-from xqueue_libs.infra.models import Base
-from xqueue_libs.services.config import ConfigLoader
-
+from xqueue.adapters.sqlite.database import sqlite_url
+from xqueue.adapters.sqlite.models import Base
+from xqueue.workspace.loader import SettingsLoader
+from xqueue.workspace.resolver import project_workspace
 
 target_metadata = Base.metadata
 
@@ -20,7 +19,7 @@ def get_database_url() -> str:
         return sqlite_url(Path(explicit_path))
 
     workspace_root = Path(os.environ.get("XQUEUE_WORKSPACE_ROOT", Path.cwd()))
-    config = ConfigLoader().load(workspace_root=workspace_root, use_workspace_instance=True)
+    config = SettingsLoader().load(project_workspace(workspace_root))
     return sqlite_url(config.paths.database_path)
 
 

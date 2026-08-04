@@ -5,13 +5,11 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from typer.testing import CliRunner
-
+from xqueue.adapters.sqlite.database import create_session_factory, create_sqlite_engine
+from xqueue.adapters.sqlite.models import AttemptModel, Base, JobModel, WorkerModel
+from xqueue.adapters.sqlite.session import SessionManager
 from xqueue_cli.exit_codes import ExitCode
 from xqueue_cli.main import app
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.infra.models import AttemptModel, Base, JobModel, WorkerModel
-from xqueue_libs.services.database import SessionManager
-
 
 runner = CliRunner()
 
@@ -156,7 +154,7 @@ def _seed_job_with_multiple_attempt_logs(instance_root: Path) -> None:
 
 def test_jobs_list_returns_json_list_response(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -186,7 +184,7 @@ def test_jobs_list_returns_json_list_response(tmp_path: Path) -> None:
 
 def test_jobs_list_supports_time_filters_and_explicit_sort(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -217,7 +215,7 @@ def test_jobs_list_supports_time_filters_and_explicit_sort(tmp_path: Path) -> No
 
 def test_jobs_show_returns_json_detail_response(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -244,7 +242,7 @@ def test_jobs_show_returns_json_detail_response(tmp_path: Path) -> None:
 
 def test_jobs_show_returns_structured_not_found_error(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -270,7 +268,7 @@ def test_jobs_show_returns_structured_not_found_error(tmp_path: Path) -> None:
 
 def test_jobs_cancel_returns_mutation_response_for_queued_job(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -297,7 +295,7 @@ def test_jobs_cancel_returns_mutation_response_for_queued_job(tmp_path: Path) ->
 
 def test_jobs_retry_returns_mutation_response_for_failed_job(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -326,7 +324,7 @@ def test_jobs_retry_returns_mutation_response_for_failed_job(tmp_path: Path) -> 
 
 def test_jobs_retry_returns_conflict_for_non_terminal_job(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -351,7 +349,7 @@ def test_jobs_retry_returns_conflict_for_non_terminal_job(tmp_path: Path) -> Non
 
 def test_jobs_purge_deletes_only_queued_jobs_for_queue(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -378,7 +376,7 @@ def test_jobs_purge_deletes_only_queued_jobs_for_queue(tmp_path: Path) -> None:
 
 def test_jobs_delete_returns_mutation_response_and_removes_logs(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -407,7 +405,7 @@ def test_jobs_delete_returns_mutation_response_and_removes_logs(tmp_path: Path) 
 
 def test_jobs_delete_returns_conflict_for_running_job(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -433,7 +431,7 @@ def test_jobs_delete_returns_conflict_for_running_job(tmp_path: Path) -> None:
 
 def test_jobs_tail_returns_json_detail_response_for_latest_attempt_stderr(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_jobs(instance)
 
@@ -463,7 +461,7 @@ def test_jobs_tail_returns_json_detail_response_for_latest_attempt_stderr(tmp_pa
 
 def test_jobs_tail_selects_stdout_for_requested_attempt_number(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_job_with_multiple_attempt_logs(instance)
 

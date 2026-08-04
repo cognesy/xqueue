@@ -1,0 +1,107 @@
+[importlinter]
+root_packages =
+    xqueue
+    xqueue_cli
+# Needed by config-library-confined-to-its-adapter: without it the graph stops
+# at the edge of our own packages and an import of xcfg is invisible.
+include_external_packages = True
+
+[importlinter:contract:core-independent]
+name = Core primitives do not depend on capabilities, adapters, runtime, or CLI
+type = forbidden
+source_modules =
+    xqueue.core
+forbidden_modules =
+    xqueue.adapters
+    xqueue.controller
+    xqueue.jobs
+    xqueue.maintenance
+    xqueue.queues
+    xqueue.runtime
+    xqueue.workspace
+    xqueue.workers
+    xqueue_cli
+
+[importlinter:contract:capability-dag]
+name = Capabilities depend downward only
+type = layers
+layers =
+    xqueue.maintenance
+    xqueue.controller
+    xqueue.workers
+    xqueue.queues
+    xqueue.jobs
+# Facets annotate the Runtime they are handed; the edge is type-only and is
+# forbidden as a real dependency by capabilities-do-not-build-the-runtime.
+ignore_imports =
+    xqueue.controller.api -> xqueue.runtime.composition
+    xqueue.jobs.api -> xqueue.runtime.composition
+    xqueue.maintenance.api -> xqueue.runtime.composition
+    xqueue.queues.api -> xqueue.runtime.composition
+    xqueue.workers.api -> xqueue.runtime.composition
+
+[importlinter:contract:workspace-independent-of-capabilities]
+name = Workspace and configuration do not depend on runtime capabilities
+type = forbidden
+source_modules =
+    xqueue.workspace
+forbidden_modules =
+    xqueue.controller
+    xqueue.jobs
+    xqueue.maintenance
+    xqueue.queues
+    xqueue.workers
+ignore_imports =
+    xqueue.workspace.api -> xqueue.runtime.composition
+
+[importlinter:contract:capabilities-do-not-build-the-runtime]
+name = Capabilities do not import the runtime composition root
+type = forbidden
+source_modules =
+    xqueue.controller
+    xqueue.jobs
+    xqueue.maintenance
+    xqueue.queues
+    xqueue.workers
+    xqueue.workspace
+forbidden_modules =
+    xqueue.runtime.composition
+# Only the facets may name Runtime, and only as a TYPE_CHECKING annotation.
+ignore_imports =
+    xqueue.controller.api -> xqueue.runtime.composition
+    xqueue.jobs.api -> xqueue.runtime.composition
+    xqueue.maintenance.api -> xqueue.runtime.composition
+    xqueue.queues.api -> xqueue.runtime.composition
+    xqueue.workers.api -> xqueue.runtime.composition
+    xqueue.workspace.api -> xqueue.runtime.composition
+
+[importlinter:contract:library-channel-neutral]
+name = Library capabilities and runtime do not depend on the CLI channel
+type = forbidden
+source_modules =
+    xqueue
+forbidden_modules =
+    xqueue_cli
+
+[importlinter:contract:cli-does-not-bypass-runtime]
+name = CLI does not import sealed persistence adapters
+type = forbidden
+source_modules =
+    xqueue_cli
+forbidden_modules =
+    xqueue.adapters
+allow_indirect_imports = True
+
+[importlinter:contract:config-library-confined-to-its-adapter]
+name = Only the workspace loader imports the configuration library
+type = forbidden
+source_modules =
+    xqueue
+    xqueue_cli
+forbidden_modules =
+    xcfg
+# The adapter is the one module allowed to know xcfg exists. Everything else
+# takes ConfigInputs in and gets EffectiveConfig out, so swapping the library
+# is a one-file change and an xcfg type never reaches a caller.
+ignore_imports =
+    xqueue.workspace.loader -> xcfg

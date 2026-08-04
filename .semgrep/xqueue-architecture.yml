@@ -1,0 +1,99 @@
+---
+rules:
+  - id: xqueue-no-rich-outside-output
+    languages:
+      - python
+    message: Rich imports should stay in the shared CLI output module.
+    severity: ERROR
+    paths:
+      include:
+        - /apps/**/*.py
+        - /libs/**/*.py
+      exclude:
+        - /apps/cli/output.py
+    pattern-regex: '^(from rich|import rich)'
+
+  - id: xqueue-no-typer-outside-cli
+    languages:
+      - python
+    message: Typer imports should stay in apps/cli shells.
+    severity: ERROR
+    paths:
+      include:
+        - /libs/**/*.py
+    pattern-regex: '^(from typer|import typer)'
+
+  # SQLAlchemy is a runtime dependency, not a sealed implementation detail. It
+  # is allowed in the SQLite adapter, in the capability persistence modules
+  # listed below, and in the composition root that wires the engine. Everywhere
+  # else - every api.py, models.py, actions.py, all of core, all of apps - it is
+  # an error. The exclude list is the whole rule, so adding a file to it is a
+  # deliberate, reviewable act rather than a silent widening.
+  - id: xqueue-no-sqlalchemy-outside-persistence
+    languages:
+      - python
+    message: >-
+      SQLAlchemy imports belong in the SQLite adapter, the allowlisted
+      capability persistence modules, or the composition root.
+    severity: ERROR
+    paths:
+      include:
+        - /apps/**/*.py
+        - /libs/**/*.py
+      exclude:
+        - /libs/adapters/sqlite/*.py
+        - /libs/jobs/pruning.py
+        - /libs/jobs/store.py
+        - /libs/maintenance/database.py
+        - /libs/maintenance/health.py
+        - /libs/maintenance/recovery.py
+        - /libs/maintenance/retention.py
+        - /libs/queues/store.py
+        - /libs/runtime/composition.py
+        - /libs/workers/attempts.py
+        - /libs/workers/orchestration.py
+        - /libs/workers/store.py
+    pattern-regex: '^(from sqlalchemy|import sqlalchemy)'
+
+  - id: xqueue-no-subprocess-outside-process-adapters
+    languages:
+      - python
+    message: >-
+      Subprocess use should stay in approved controller and worker adapters.
+    severity: ERROR
+    paths:
+      include:
+        - /apps/**/*.py
+        - /libs/**/*.py
+      exclude:
+        - /libs/controller/launchd.py
+        - /libs/controller/systemd.py
+        - /libs/workers/process.py
+        - /libs/controller/supervisor.py
+    pattern-regex: '^(from subprocess|import subprocess)'
+
+  # Where a process gets its environment from is a resolution decision, and
+  # resolution has one home. The listed files are the whole set: the workspace
+  # resolver and its config loader (both of which take an `environ` argument and
+  # fall back to the real one), the instance shim that exports XQUEUE_DB_PATH for
+  # Alembic, logging bootstrap, and the worker adapter that builds a child's
+  # environment. Anywhere else, reading os.environ means a module decided for
+  # itself what it was configured with, behind the loader's back.
+  - id: xqueue-no-environment-reads-outside-resolution
+    languages:
+      - python
+    message: >-
+      Environment access belongs in workspace resolution, the config loader, or
+      the process adapters. Take the value from the effective configuration.
+    severity: ERROR
+    paths:
+      include:
+        - /apps/**/*.py
+        - /libs/**/*.py
+      exclude:
+        - /libs/runtime/logging.py
+        - /libs/workers/process.py
+        - /libs/workspace/instance.py
+        - /libs/workspace/loader.py
+        - /libs/workspace/resolver.py
+    pattern-regex: '(os\.environ|os\.getenv|\bgetenv\()'

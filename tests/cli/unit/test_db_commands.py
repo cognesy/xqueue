@@ -5,13 +5,11 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from typer.testing import CliRunner
-
+from xqueue.adapters.sqlite.database import create_session_factory, create_sqlite_engine
+from xqueue.adapters.sqlite.models import AttemptModel, Base, EventModel, JobModel
+from xqueue.adapters.sqlite.session import SessionManager
 from xqueue_cli.exit_codes import ExitCode
 from xqueue_cli.main import app
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.infra.models import AttemptModel, Base, EventModel, JobModel
-from xqueue_libs.services.database import SessionManager
-
 
 runner = CliRunner()
 
@@ -36,7 +34,7 @@ def test_db_reset_workspace_instance_requires_yes(tmp_path: Path) -> None:
 
 def test_db_reset_workspace_instance_removes_runtime_artifacts_and_preserves_config(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         runtime = instance / "run"
         logs = instance / "logs"
         config_file = instance / "config.yaml"
@@ -64,7 +62,7 @@ def test_db_reset_workspace_instance_removes_runtime_artifacts_and_preserves_con
         payload = json.loads(result.stdout)
 
         assert payload["ok"] is True
-        assert payload["item"]["config_file"].endswith("instance/config.yaml")
+        assert payload["item"]["config_file"].endswith(".xqueue/config.yaml")
         assert payload["item"]["removed_paths"] == [
             str(database_path.resolve()),
             str(runtime.resolve()),
@@ -101,7 +99,7 @@ def test_db_cleanup_retention_requires_yes(tmp_path: Path) -> None:
 
 def test_db_cleanup_retention_requires_at_least_one_artifact_class(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        Path("instance").mkdir(exist_ok=True)
+        Path(".xqueue").mkdir(exist_ok=True)
 
         result = runner.invoke(
             app,
@@ -129,7 +127,7 @@ def test_db_cleanup_retention_requires_at_least_one_artifact_class(tmp_path: Pat
 
 def test_db_cleanup_retention_prunes_old_attempts_events_and_logs(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         logs = instance / "logs"
         instance.mkdir(exist_ok=True)
         logs.mkdir(parents=True, exist_ok=True)
@@ -225,7 +223,10 @@ def test_db_cleanup_retention_prunes_old_attempts_events_and_logs(tmp_path: Path
         assert payload["item"]["deleted_attempt_count"] == 1
         assert payload["item"]["deleted_event_count"] == 1
         assert payload["item"]["deleted_log_count"] == 2
-        assert sorted(Path(path).name for path in payload["item"]["deleted_log_paths"]) == ["old.stderr.log", "old.stdout.log"]
+        assert sorted(Path(path).name for path in payload["item"]["deleted_log_paths"]) == [
+            "old.stderr.log",
+            "old.stdout.log",
+        ]
         assert not old_stdout.exists()
         assert not old_stderr.exists()
         assert recent_stdout.exists()

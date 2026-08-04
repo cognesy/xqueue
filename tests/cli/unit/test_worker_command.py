@@ -6,12 +6,10 @@ from pathlib import Path
 
 from sqlalchemy import text
 from typer.testing import CliRunner
-
+from xqueue.adapters.sqlite.database import create_session_factory, create_sqlite_engine
+from xqueue.adapters.sqlite.models import Base, JobModel
+from xqueue.adapters.sqlite.session import SessionManager
 from xqueue_cli.main import app
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.infra.models import Base, JobModel
-from xqueue_libs.services.database import SessionManager
-
 
 runner = CliRunner()
 
@@ -41,7 +39,7 @@ def _seed_job(database_path: Path) -> None:
 
 def test_worker_run_claims_job_and_returns_json_detail(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         database_path = instance / "xqueue.db"
         _seed_job(database_path)
@@ -89,7 +87,7 @@ def test_worker_run_claims_job_and_returns_json_detail(tmp_path: Path) -> None:
 
 def test_worker_direct_invocation_alias_claims_job_and_returns_json_detail(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         database_path = instance / "xqueue.db"
         _seed_job(database_path)
@@ -119,7 +117,7 @@ def test_worker_direct_invocation_alias_claims_job_and_returns_json_detail(tmp_p
 
 def test_worker_run_execute_claimed_completes_job_and_records_attempt(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         database_path = instance / "xqueue.db"
         _seed_job(database_path)
@@ -169,7 +167,7 @@ def test_worker_run_execute_claimed_completes_job_and_records_attempt(tmp_path: 
 
 def test_worker_run_continuous_execute_claimed_with_max_polls_exits_after_one_poll(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         database_path = instance / "xqueue.db"
         _seed_job(database_path)
@@ -219,7 +217,7 @@ def test_worker_run_continuous_execute_claimed_with_max_polls_exits_after_one_po
 
 def test_worker_rejects_concurrency_greater_than_one_without_continuous_mode(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        Path("instance").mkdir(exist_ok=True)
+        Path(".xqueue").mkdir(exist_ok=True)
 
         result = runner.invoke(
             app,
@@ -245,7 +243,7 @@ def test_worker_rejects_concurrency_greater_than_one_without_continuous_mode(tmp
 
 def test_worker_rejects_concurrency_greater_than_one_without_execute_claimed(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        Path("instance").mkdir(exist_ok=True)
+        Path(".xqueue").mkdir(exist_ok=True)
 
         result = runner.invoke(
             app,

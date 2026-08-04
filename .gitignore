@@ -87,8 +87,11 @@ logs/
 .beads-credential-key
 .beads/.local_version
 .beads/last-touched
+.beads/last_pull
 .beads/interactions.jsonl
 .beads/embeddeddolt/
+.beads/proxieddb/
+.beads/proxied_server_client_info.json
 .beads/.exclusive-lock
 .beads/bd.sock*
 .beads/*.lock
@@ -114,3 +117,6 @@ logs/
 # Local queue instance state
 instance/*
 !instance/.gitkeep
+
+# Local QMD search index
+.qmd/

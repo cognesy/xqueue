@@ -4,24 +4,15 @@ from __future__ import annotations
 
 import os
 import socket
-from pathlib import Path
 from uuid import uuid4
 
 import typer
-
+from xqueue.core.errors import ValidationError
+from xqueue.workers.models import RegisterWorkerInput, WorkerPollResult
+from xqueue_cli.client import open_client
+from xqueue_cli.contracts import DetailResponse
 from xqueue_cli.output import Output, OutputFormat
 from xqueue_cli.runtime import run_action
-from xqueue_libs.actions.workers import RunWorkerAction, RunWorkerLoopAction
-from xqueue_libs.domain.errors import ValidationError
-from xqueue_libs.domain.models import RegisterWorkerInput
-from xqueue_libs.services.attempts import AttemptService
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.services.config import ConfigLoader
-from xqueue_libs.services.database import SessionManager
-from xqueue_libs.services.execution import CommandExecutionService
-from xqueue_libs.services.jobs import JobService
-from xqueue_libs.services.workers import WorkerService
-
 
 app = typer.Typer(
     help="Run and inspect local worker processes.",
@@ -73,55 +64,34 @@ def _run_worker_command(
     """Register a worker and perform one claim poll."""
     out = Output(ctx, contract_name, output)
 
-    def execute():
+    def execute() -> DetailResponse[WorkerPollResult]:
         _validate_concurrency_mode(
             concurrency=concurrency,
             continuous=continuous,
             execute_claimed=execute_claimed,
         )
 
-        config = ConfigLoader().load(
-            workspace_root=Path.cwd(),
-            use_workspace_instance=use_workspace_instance,
-        )
-        engine = create_sqlite_engine(config.paths.database_path)
-        session_factory = create_session_factory(engine)
-        job_service = JobService()
-        run_worker_action = RunWorkerAction(
-            SessionManager(session_factory),
-            WorkerService(job_service),
-            job_service=job_service,
-            attempt_service=AttemptService(job_service),
-            execution_service=CommandExecutionService(),
-            log_root=config.paths.log_root,
-            default_timeout_seconds=config.worker.default_timeout_seconds if default_timeout_seconds is None else default_timeout_seconds,
-            cancel_grace_period_seconds=config.worker.cancel_grace_period_seconds if cancel_grace_period_seconds is None else cancel_grace_period_seconds,
-            retry_delay_seconds=config.worker.retry_delay_seconds if retry_delay_seconds is None else retry_delay_seconds,
-        )
-        loop_action = RunWorkerLoopAction(run_worker_action)
-
-        payload = RegisterWorkerInput(
-            worker_id=worker_id or _default_worker_id(),
-            queues=queue or [config.queue.default_queue],
-            concurrency=concurrency,
-            hostname=socket.gethostname(),
-            process_id=os.getpid(),
-        )
-
-        if continuous:
-            return loop_action(
+        with open_client(use_workspace_instance=use_workspace_instance) as xq:
+            config = xq.workspace.config()
+            payload = RegisterWorkerInput(
+                worker_id=worker_id or _default_worker_id(),
+                queues=queue or [config.queue.default_queue],
+                concurrency=concurrency,
+                hostname=socket.gethostname(),
+                process_id=os.getpid(),
+            )
+            result = xq.workers.run(
                 payload,
                 lease_duration_seconds=lease_seconds,
-                poll_interval_seconds=config.worker.poll_interval_seconds if poll_interval_seconds is None else poll_interval_seconds,
                 execute_claimed=execute_claimed,
+                continuous=continuous,
+                poll_interval_seconds=poll_interval_seconds,
                 max_polls=max_polls,
+                default_timeout_seconds=default_timeout_seconds,
+                cancel_grace_period_seconds=cancel_grace_period_seconds,
+                retry_delay_seconds=retry_delay_seconds,
             )
-
-        return run_worker_action(
-            payload,
-            lease_duration_seconds=lease_seconds,
-            execute_claimed=execute_claimed,
-        )
+            return DetailResponse(item=result)
 
     run_action(execute, out=out)
 
@@ -191,7 +161,7 @@ def run_worker(
         help="Resolve runtime paths relative to the repository instance directory.",
         hidden=True,
     ),
-    ) -> None:
+) -> None:
     """Register a worker and perform one claim poll."""
     _run_worker_command(
         ctx,

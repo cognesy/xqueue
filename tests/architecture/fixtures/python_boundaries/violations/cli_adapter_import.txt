@@ -1,0 +1,3 @@
+apps/cli/bad.py
+---
+from xqueue.adapters.sqlite import SqliteAdapter

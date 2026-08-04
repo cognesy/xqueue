@@ -1,0 +1,46 @@
+# xqueue packaged defaults.
+#
+# This is the base layer of every configuration xqueue composes. It states
+# every default outright so an operator can read one file to see what they are
+# and copy a section they want to change. The same values are also the field
+# defaults on `xqueue.workspace.settings.Settings`, which stays the
+# programmatic contract -- this file is what a human reads.
+#
+# Layers merged over this one, later winning:
+#
+#   ~/.config/xqueue/config.yaml
+#   <workspace>/.xqueue/config.yaml
+#   XQUEUE_<SECTION>__<KEY>
+#   --set <path>=<value>
+#
+# `--config <path>` or `XQUEUE_CONFIG_PATH` replaces this base outright;
+# `--env <name>` or `XQUEUE_ENV` layers `config.<name>.yaml` over it.
+
+queue:
+  # Queue used when a job is enqueued without naming one.
+  default_queue: default
+
+worker:
+  # Seconds a worker waits between claim attempts when a queue is empty.
+  poll_interval_seconds: 1.0
+  # Wall-clock limit for one attempt, unless the job or pool overrides it.
+  default_timeout_seconds: 3600
+  # Seconds between SIGTERM and SIGKILL when cancelling a process group.
+  cancel_grace_period_seconds: 10
+  # Seconds a failed job waits before it becomes claimable again.
+  retry_delay_seconds: 5
+
+controller:
+  # Worker pools the controller supervises. Empty means the controller runs
+  # and supervises nothing until `xq controller pools ensure` adds one.
+  pools: {}
+
+# The four path fields are deliberately absent rather than set to a value.
+# Unset means "derive from the workspace", which is what almost every
+# installation wants; naming one here would pin every workspace on the machine
+# to a single directory. Set them in a workspace config file if you must:
+#
+#   state_root: /var/lib/xqueue
+#   runtime_root: /var/run/xqueue
+#   log_root: /var/log/xqueue
+#   database_path: /var/lib/xqueue/xqueue.db

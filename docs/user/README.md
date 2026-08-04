@@ -5,7 +5,7 @@ machine.
 
 This section is for operators and automation authors. It covers the CLI that is
 implemented in the repository today, not the broader long-term command surface
-described in [SPEC.md](/Users/ddebowczyk/projects/xqueue/SPEC.md).
+described in [SPEC.md](../../SPEC.md).
 
 ## Scope
 
@@ -32,14 +32,29 @@ uv sync
 uv run xq --help
 ```
 
-The console script entrypoint is `xq`. During local development, most examples
-in this guide use `--workspace-instance` so state stays under the repository
-`instance/` directory instead of the default `~/.xqueue/` user paths.
+As a tool, the CLI needs its `cli` extra:
+
+```sh
+uv tool install "xqueue[cli]"
+```
+
+Installing bare `xqueue` gives you the Python SDK without Typer, Rich, or
+python-toon. The `xq` script is still installed, and says so:
+
+```text
+$ xq --help
+xq requires the cli extra: pip install "xqueue[cli]"
+```
+
+The console script entrypoint is `xq`. Run `xq workspace init` once to create
+a `.xqueue/` directory here, and every command in this guide will find it by
+walking up from the working directory. Without one, they use the machine-wide
+instance at `XQUEUE_HOME`, or `~/.xqueue/`.
 
 To inspect the resolved paths:
 
 ```sh
-uv run xq -o json config show --workspace-instance
+uv run xq -o json config show
 ```
 
 ## Output Modes
@@ -50,10 +65,10 @@ extra flags.
 Use `-o` / `--output` to override the format:
 
 ```sh
-uv run xq jobs list --workspace-instance
-uv run xq -o json jobs show <job-id> --workspace-instance
-uv run xq -o text doctor --workspace-instance
-uv run xq --fields id,state jobs list --workspace-instance
+uv run xq jobs list
+uv run xq -o json jobs show <job-id>
+uv run xq -o text doctor
+uv run xq --fields id,state jobs list
 ```
 
 Available formats:
@@ -62,22 +77,23 @@ Available formats:
 - `json`
 - `jsonl`
 - `text`
+- `tmux`
 
 `--fields` narrows TOON output and can also narrow JSON when explicitly
 requested. Application logs remain on `stderr`.
 
-## xqa Pilot Workflow
+## Repository Quality Workflow
 
-This repo now has a minimal `xqa` rollout that complements `xqueue`'s own
-operator surfaces.
+The repository uses `xqa` for workflow readiness and catalog verification. Its
+current mechanism catalog is data-only, so developers run native tools directly.
 
 Use:
 
-- `xqa doctor` for shared quality-workflow readiness
-- `xqa profile run default` for the deterministic shared quality lane
-- `xqa profile run style` for Ruff-only checks
-- `xqa profile run architecture` for the Semgrep-backed architecture audit
-- `xqa snap store` and `xqa progress` for before/current/remaining-work visibility
+- `xqa doctor --root . --format json` for shared workflow readiness
+- `xqa mechanism verify --format json` for catalog integrity
+- `uvx ruff check apps libs tests scripts` for lint and import hygiene
+- `uv run python scripts/check_architecture.py` for architecture boundaries
+- `uv run pytest` for behavior
 
 Boundary:
 
@@ -91,7 +107,6 @@ Enqueue a shell command:
 
 ```sh
 uv run xq enqueue \
-  --workspace-instance \
   --queue default \
   -- /bin/sh -lc 'echo hello from xqueue'
 ```
@@ -99,14 +114,13 @@ uv run xq enqueue \
 List jobs:
 
 ```sh
-uv run xq jobs list --workspace-instance
+uv run xq jobs list
 ```
 
 Run one worker poll and execute the claimed job:
 
 ```sh
 uv run xq worker run \
-  --workspace-instance \
   --queue default \
   --execute-claimed
 ```
@@ -114,7 +128,7 @@ uv run xq worker run \
 Inspect the result:
 
 ```sh
-uv run xq -o json jobs show <job-id> --workspace-instance
+uv run xq -o json jobs show <job-id>
 ```
 
 Install session hooks for Claude Code and Codex:
@@ -143,4 +157,4 @@ Current operator-facing commands:
 - `xq hooks install|status`
 
 For day-to-day operation, see
-[operations.md](/Users/ddebowczyk/projects/xqueue/docs/user/operations.md).
+[operations.md](operations.md).

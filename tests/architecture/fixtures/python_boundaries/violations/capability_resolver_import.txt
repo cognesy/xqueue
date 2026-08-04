@@ -1,0 +1,3 @@
+libs/jobs/bad.py
+---
+from xqueue.workspace.resolver import resolve_workspace

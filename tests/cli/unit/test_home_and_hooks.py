@@ -4,14 +4,15 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
 from toon import decode
 from typer.testing import CliRunner
-
+from xqueue import Xqueue
+from xqueue.adapters.sqlite.database import create_session_factory, create_sqlite_engine
+from xqueue.adapters.sqlite.models import Base, JobModel, WorkerModel
+from xqueue.adapters.sqlite.session import SessionManager
+from xqueue.workspace.marker import build_marker, write_marker
 from xqueue_cli.main import app
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.infra.models import Base, JobModel, WorkerModel
-from xqueue_libs.services.database import SessionManager
-
 
 runner = CliRunner()
 
@@ -52,9 +53,12 @@ def _seed_home_database(database_path: Path) -> None:
 
 def test_bare_xq_shows_content_first_home_view(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
-        instance.mkdir(exist_ok=True)
-        _seed_home_database(instance / "xqueue.db")
+        # A marker, not just the directory: discovery is what finds this
+        # workspace, and discovery only stops at a directory that declares
+        # itself one.
+        workspace_dir = Path(".xqueue")
+        write_marker(workspace_dir, build_marker("test"))
+        _seed_home_database(workspace_dir / "xqueue.db")
 
         result = runner.invoke(app, [])
 
@@ -63,6 +67,34 @@ def test_bare_xq_shows_content_first_home_view(tmp_path: Path) -> None:
         assert "queues[1" in result.stdout
         assert "jobs[6" in result.stdout
         assert "workers[1" in result.stdout
+
+
+def test_bare_xq_without_a_state_store_renders_the_degraded_view(tmp_path: Path) -> None:
+    """A workspace with no database yet is an expected state, not a failure."""
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        result = runner.invoke(app, [])
+
+        assert result.exit_code == 0
+        assert "queues[0]" in result.stdout
+        assert "Run `xq db check` to inspect the current state store" in result.stdout
+
+
+def test_home_does_not_swallow_unexpected_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Only a missing store degrades; a bug must not render as a healthy empty view."""
+
+    def _boom(self: object) -> list[object]:
+        raise RuntimeError("worker listing is broken")
+
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        instance = Path(".xqueue")
+        instance.mkdir(exist_ok=True)
+        _seed_home_database(instance / "xqueue.db")
+
+        with Xqueue.open(workspace_root=Path.cwd(), use_workspace_instance=True) as client:
+            monkeypatch.setattr(type(client._runtime.worker_actions.list), "__call__", _boom)
+
+            with pytest.raises(RuntimeError, match="worker listing is broken"):
+                client.maintenance.home()
 
 
 def test_hooks_install_and_status_commands_work_in_repo_root(tmp_path: Path) -> None:
@@ -97,9 +129,9 @@ def test_hidden_hook_commands_do_not_show_in_hooks_help() -> None:
 
 def test_hooks_session_start_outputs_toon_home_view_even_with_global_json(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
-        instance.mkdir(exist_ok=True)
-        _seed_home_database(instance / "xqueue.db")
+        workspace_dir = Path(".xqueue")
+        write_marker(workspace_dir, build_marker("test"))
+        _seed_home_database(workspace_dir / "xqueue.db")
 
         result = runner.invoke(app, ["-o", "json", "hooks", "session-start"])
 

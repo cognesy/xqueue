@@ -7,13 +7,11 @@ from pathlib import Path
 import click
 from typer import Context
 from typer.testing import CliRunner
-
+from xqueue.adapters.sqlite.database import create_session_factory, create_sqlite_engine
+from xqueue.adapters.sqlite.models import AttemptModel, Base, JobModel, WorkerModel
+from xqueue.adapters.sqlite.session import SessionManager
 from xqueue_cli.main import app
 from xqueue_cli.output import Output, OutputFormat
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.infra.models import AttemptModel, Base, JobModel, WorkerModel
-from xqueue_libs.services.database import SessionManager
-
 
 runner = CliRunner()
 
@@ -82,7 +80,7 @@ def test_json_output_bypasses_rich_formatting_even_with_terminal_console() -> No
 
 def test_jobs_show_json_uses_utc_timestamps_after_sqlite_round_trip(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_job_for_json_contract(instance / "xqueue.db")
 

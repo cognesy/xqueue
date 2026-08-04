@@ -1,0 +1,3 @@
+apps/cli/commands/worker.py
+---
+from xqueue.workers.store import WorkerService

@@ -46,7 +46,8 @@ is command-first, not callable-first.
 Default operator UX:
 
 ```sh
-xq enqueue --queue agent --cwd /repo -- "python scripts/check_mailbox.py --agent writer-1"
+xq enqueue --queue agent --cwd /repo \
+  -- "python scripts/check_mailbox.py --agent writer-1"
 ```
 
 Important implications:
@@ -312,17 +313,30 @@ When implementing or reviewing work in this repo:
 - optimize for correctness of claim/lease/cancel/timeout behavior before adding
   optional features
 
-## xqa Pilot
+## Quality Workflow
 
-This repo now has a minimal `xqa` rollout.
+This repo uses `xqa` as its shared quality-workflow control plane. The current
+`xqa` mechanism catalog is data-only; run the native tools directly.
 
-Use:
+Run every gate before handing off a change. `docs/dev/development.md` holds the
+canonical list; it is repeated here in full so the two cannot drift apart:
 
-- `xqa doctor` for shared quality-workflow readiness
-- `xqa profile run default` for the deterministic shared quality lane
-- `xqa profile run style` for Ruff-only checks
-- `xqa profile run architecture` for the Semgrep-backed architecture audit
-- `xqa progress` after capturing a baseline with `xqa snap store`
+- `uvx ruff check apps libs tests scripts` for lint and import hygiene
+- `uvx ruff format --check apps libs tests scripts` for formatting
+- `uv run lint-imports` for the capability dependency contracts
+- `uv run mypy` for the typing the `py.typed` marker promises
+- `uv run python scripts/check_python_boundaries.py` for the CLI and adapter
+  reach-around allowlists
+- `uv run python scripts/check_architecture.py` for the Semgrep ratchet, which
+  runs Semgrep itself through `uvx`
+- `uv run pytest` for behavior
+
+The shared `xqa` checks need the sibling repository at `../xqa`:
+
+- `uv run --project ../xqa --all-packages xqa doctor --root . --format json`
+  for shared workflow readiness
+- `uv run --project ../xqa --all-packages xqa mechanism verify --format json`
+  for catalog integrity
 
 Boundary:
 

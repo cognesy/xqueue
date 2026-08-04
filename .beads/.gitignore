@@ -6,6 +6,7 @@ bd.sock
 bd.sock.startlock
 sync-state.json
 last-touched
+last_pull
 .exclusive-lock
 
 # Daemon runtime (lock, log, pid)
@@ -13,6 +14,11 @@ daemon.*
 
 # Interactions log (runtime, not versioned)
 interactions.jsonl
+
+# Embedded and proxied Dolt runtime state
+embeddeddolt/
+proxieddb/
+proxied_server_client_info.json
 
 # Push state (runtime, per-machine)
 push-state.json

@@ -266,7 +266,7 @@ uv run xq -o json db reset-workspace-instance --yes
 ```
 
 This removes owned repo-local runtime artifacts while preserving
-`instance/config.yaml`.
+`.xqueue/config.yaml`.
 
 Do not use this casually on a system with data you want to keep.
 
@@ -322,14 +322,16 @@ Prefer TOON for quick inspection and `-o json` for the stable envelope.
 
 ## Repo-Local Development Note
 
-In this repository, `--workspace-instance` resolves runtime data under:
+This repository has its own workspace, so commands run here resolve runtime
+data under:
 
-- `instance/xqueue.db`
-- `instance/run/`
-- `instance/logs/`
-- `instance/config.yaml`
+- `.xqueue/xqueue.db`
+- `.xqueue/run/`
+- `.xqueue/logs/`
+- `.xqueue/config.yaml`
 
-Use it when you want deterministic local admin operations inside the repo.
+Run `xq workspace init` if `.xqueue/marker.toml` is missing; without a marker
+the same commands fall back to the machine-wide instance.
 
 ## References
 

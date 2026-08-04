@@ -5,18 +5,21 @@ from __future__ import annotations
 import json
 from enum import StrEnum
 from io import StringIO
-from typing import Any
-from typing import NoReturn
+from typing import Any, NoReturn
 
 import typer
 from pydantic import BaseModel
 from rich.console import Console
 from rich.pretty import Pretty
-
-from xqueue_libs.services.axi_contracts import get_command_contract, parse_fields_csv, validate_requested_fields
-from xqueue_libs.domain.responses import ErrorDetail, ErrorResponse, PayloadConvertible
-from xqueue_libs.services.tmux_renderer import render_tmux
-from xqueue_libs.services.toon_renderer import render_toon
+from xqueue_cli.axi_contracts import (
+    CommandContract,
+    get_command_contract,
+    parse_fields_csv,
+    validate_requested_fields,
+)
+from xqueue_cli.contracts import ErrorDetail, ErrorResponse, PayloadConvertible
+from xqueue_cli.renderers.tmux import render_tmux
+from xqueue_cli.renderers.toon import render_toon
 
 
 class OutputFormat(StrEnum):
@@ -72,7 +75,8 @@ def _render_text(value: Any) -> str:
 def _resolve_output(ctx: typer.Context, local_output: OutputFormat | None) -> OutputFormat:
     if local_output is not None:
         return local_output
-    current = ctx
+    # The parent chain is click's, not typer's; walk it untyped.
+    current: Any = ctx
     while current is not None:
         obj = getattr(current, "obj", None)
         if isinstance(obj, dict) and isinstance(obj.get("output"), OutputFormat):
@@ -112,7 +116,7 @@ def _resolve_nested_fields(
 def _resolve_top_fields(
     payload: dict[str, Any],
     *,
-    contract,
+    contract: CommandContract,
     requested: tuple[str, ...],
     selected_row_fields: tuple[str, ...],
     selected_item_fields: tuple[str, ...],
@@ -135,7 +139,7 @@ def _resolve_top_fields(
     return tuple(resolved)
 
 
-def _select_payload(payload: Any, *, contract, requested: tuple[str, ...]) -> Any:
+def _select_payload(payload: Any, *, contract: CommandContract, requested: tuple[str, ...]) -> Any:
     if not isinstance(payload, dict):
         return payload
 
@@ -172,9 +176,7 @@ def _select_payload(payload: Any, *, contract, requested: tuple[str, ...]) -> An
             continue
         if field == contract.item_key and isinstance(value, dict) and selected_item_fields:
             selected[field] = {
-                item_field: value[item_field]
-                for item_field in selected_item_fields
-                if item_field in value
+                item_field: value[item_field] for item_field in selected_item_fields if item_field in value
             }
             continue
         selected[field] = value
@@ -195,7 +197,8 @@ class Output:
         self._fmt = _resolve_output(ctx, local_output)
         self._contract = get_command_contract(contract_name)
         self._console = console or Console(stderr=False)
-        current = ctx
+        # The parent chain is click's, not typer's; walk it untyped.
+        current: Any = ctx
         fields_csv = None
         self._full = False
         while current is not None:
@@ -216,7 +219,7 @@ class Output:
         return self._contract.name
 
     @property
-    def contract(self):
+    def contract(self) -> CommandContract:
         return self._contract
 
     @property
@@ -243,10 +246,14 @@ class Output:
         if self._fmt is OutputFormat.TMUX:
             return render_tmux(_select_payload(payload, contract=self._contract, requested=self._requested_fields))
         if self._fmt is OutputFormat.JSON:
-            selected = payload if not self._requested_fields else _select_payload(
-                payload,
-                contract=self._contract,
-                requested=self._requested_fields,
+            selected = (
+                payload
+                if not self._requested_fields
+                else _select_payload(
+                    payload,
+                    contract=self._contract,
+                    requested=self._requested_fields,
+                )
             )
             return json.dumps(selected, indent=2, default=_json_default)
         if self._fmt is OutputFormat.JSONL:

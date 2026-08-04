@@ -1,0 +1,18 @@
+---
+catalogs:
+  - fingerprint: >-
+      sha256:d82653df7a42d80209301f17a2caffeb43e3c879acedec8b648a807ca4aa17e0
+    id: xqa.core.resources
+    source: pkg:xqa_core/resources/catalog.yaml
+    version: 1.0.0
+  - fingerprint: >-
+      sha256:0ec47b25bf9ad783db8348fd7f886182fa0cbea6857592cc39cce1ae49dceaae
+    id: xqa.core.records
+    source: pkg:xqa_core/resources/schemas/records/catalog.yaml
+    version: '1'
+created_at: '2026-08-03T17:11:34.477013Z'
+created_by:
+  id: codex
+  kind: agent
+id: catalog_364d5c081082634fb91cd83b
+schema: xqa.catalog-lock.v1

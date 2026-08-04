@@ -5,12 +5,10 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from typer.testing import CliRunner
-
+from xqueue.adapters.sqlite.database import create_session_factory, create_sqlite_engine
+from xqueue.adapters.sqlite.models import AttemptModel, Base, JobModel, QueueModel, WorkerModel
+from xqueue.adapters.sqlite.session import SessionManager
 from xqueue_cli.main import app
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.infra.models import AttemptModel, Base, JobModel, QueueModel, WorkerModel
-from xqueue_libs.services.database import SessionManager
-
 
 runner = CliRunner()
 
@@ -23,7 +21,15 @@ def _seed_operations_state(database_path: Path) -> None:
 
     with SessionManager(session_factory).transaction() as session:
         session.add(QueueModel(name="alpha", state="paused", updated_at=now, paused_at=now))
-        session.add(WorkerModel(id="worker-cli-stale", state="active", queues=["alpha"], heartbeat_at=now - timedelta(minutes=5), started_at=now - timedelta(minutes=10)))
+        session.add(
+            WorkerModel(
+                id="worker-cli-stale",
+                state="active",
+                queues=["alpha"],
+                heartbeat_at=now - timedelta(minutes=5),
+                started_at=now - timedelta(minutes=10),
+            )
+        )
         session.add(
             JobModel(
                 id="job-cli-stale",
@@ -55,7 +61,7 @@ def _seed_operations_state(database_path: Path) -> None:
 
 def test_health_and_doctor_return_json(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_operations_state(instance / "xqueue.db")
 
@@ -82,7 +88,7 @@ def test_health_and_doctor_return_json(tmp_path: Path) -> None:
 
 def test_recover_stale_leases_returns_mutation_json(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_operations_state(instance / "xqueue.db")
 
@@ -102,7 +108,7 @@ def test_recover_stale_leases_returns_mutation_json(tmp_path: Path) -> None:
 
 def test_db_check_and_vacuum_return_json(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_operations_state(instance / "xqueue.db")
 

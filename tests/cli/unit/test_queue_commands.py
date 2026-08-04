@@ -5,12 +5,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from typer.testing import CliRunner
-
+from xqueue.adapters.sqlite.database import create_session_factory, create_sqlite_engine
+from xqueue.adapters.sqlite.models import Base, JobModel
+from xqueue.adapters.sqlite.session import SessionManager
 from xqueue_cli.main import app
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.infra.models import Base, JobModel
-from xqueue_libs.services.database import SessionManager
-
 
 runner = CliRunner()
 
@@ -62,7 +60,7 @@ def _seed_queue_jobs(database_path: Path) -> None:
 
 def test_queues_list_and_stats_return_json(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_queue_jobs(instance / "xqueue.db")
 
@@ -83,7 +81,7 @@ def test_queues_list_and_stats_return_json(tmp_path: Path) -> None:
 
 def test_queues_pause_and_resume_return_mutation_json(tmp_path: Path) -> None:
     with runner.isolated_filesystem(temp_dir=tmp_path):
-        instance = Path("instance")
+        instance = Path(".xqueue")
         instance.mkdir(exist_ok=True)
         _seed_queue_jobs(instance / "xqueue.db")
 

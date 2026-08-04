@@ -12,7 +12,7 @@ Describe the current xqueue CLI output boundary after the AXI refactor.
 `xq` now has:
 
 - TOON as the default stdout format
-- `-o` / `--output` with `toon`, `json`, `jsonl`, and `text`
+- `-o` / `--output` with `toon`, `json`, `jsonl`, `text`, and `tmux`
 - a contract-backed `Output` object for command rendering
 - structured errors on stdout
 - content-first bare `xq`
@@ -22,12 +22,13 @@ Describe the current xqueue CLI output boundary after the AXI refactor.
 
 Primary files:
 
-- [output.py](/Users/ddebowczyk/projects/xqueue/apps/cli/output.py)
-- [runtime.py](/Users/ddebowczyk/projects/xqueue/apps/cli/runtime.py)
-- [axi_contracts.py](/Users/ddebowczyk/projects/xqueue/libs/services/axi_contracts.py)
-- [toon_renderer.py](/Users/ddebowczyk/projects/xqueue/libs/services/toon_renderer.py)
-- [responses.py](/Users/ddebowczyk/projects/xqueue/libs/domain/responses.py)
-- [main.py](/Users/ddebowczyk/projects/xqueue/apps/cli/main.py)
+- [output.py](../../apps/cli/output.py)
+- [runtime.py](../../apps/cli/runtime.py)
+- [axi_contracts.py](../../apps/cli/axi_contracts.py)
+- [toon.py](../../apps/cli/renderers/toon.py)
+- [tmux.py](../../apps/cli/renderers/tmux.py)
+- [contracts.py](../../apps/cli/contracts.py)
+- [main.py](../../apps/cli/main.py)
 
 ## Format Contract
 
@@ -43,6 +44,7 @@ Supported formats:
 - `json`: stable structured envelope for automation
 - `jsonl`: one JSON row per list item when available
 - `text`: human-readable Rich/Pretty path
+- `tmux`: compact pane-oriented text
 
 Rules:
 
@@ -84,7 +86,7 @@ Useful properties:
 ## Command Contracts
 
 Every operator-facing command has a contract in
-[axi_contracts.py](/Users/ddebowczyk/projects/xqueue/libs/services/axi_contracts.py).
+[axi_contracts.py](../../apps/cli/axi_contracts.py).
 
 Contracts are derived from response and nested row/detail models, not manually
 duplicated field lists. They define:
@@ -113,7 +115,7 @@ Stable structured envelopes remain:
 - mutations: `{ "ok": true, "item": { ... } }`
 - errors: `{ "ok": false, "error": { ... } }`
 
-The common rendering protocol is `PayloadConvertible`:
+CLI-owned contracts convert typed capability results to stable payloads:
 
 - `to_payload()`
 - `jsonl_items()`
@@ -146,7 +148,7 @@ The home payload includes:
 - a few next-step hints
 
 Implementation lives in
-[home.py](/Users/ddebowczyk/projects/xqueue/apps/cli/home.py).
+[home.py](../../apps/cli/home.py).
 
 ## Session Hooks
 
@@ -158,7 +160,7 @@ Repo-local hooks are managed through:
 - `xq hooks session-end`
 
 Implementation lives in
-[session_hooks.py](/Users/ddebowczyk/projects/xqueue/libs/services/session_hooks.py).
+[hooks.py](../../libs/workspace/hooks.py).
 
 Behavior:
 
@@ -172,13 +174,13 @@ Behavior:
 
 The current output stack is covered by:
 
-- [test_output_axi.py](/Users/ddebowczyk/projects/xqueue/tests/cli/unit/test_output_axi.py)
-- [test_axi_contracts.py](/Users/ddebowczyk/projects/xqueue/tests/cli/unit/test_axi_contracts.py)
-- [test_toon_renderer.py](/Users/ddebowczyk/projects/xqueue/tests/services/unit/test_toon_renderer.py)
-- [test_toon_output_contract.py](/Users/ddebowczyk/projects/xqueue/tests/cli/regression/test_toon_output_contract.py)
-- [test_json_output_contract.py](/Users/ddebowczyk/projects/xqueue/tests/cli/regression/test_json_output_contract.py)
-- [test_home_and_hooks.py](/Users/ddebowczyk/projects/xqueue/tests/cli/unit/test_home_and_hooks.py)
-- [test_session_hooks.py](/Users/ddebowczyk/projects/xqueue/tests/services/unit/test_session_hooks.py)
+- [test_output_axi.py](../../tests/cli/unit/test_output_axi.py)
+- [test_axi_contracts.py](../../tests/cli/unit/test_axi_contracts.py)
+- [test_toon_renderer.py](../../tests/cli/unit/test_toon_renderer.py)
+- [test_toon_output_contract.py](../../tests/cli/regression/test_toon_output_contract.py)
+- [test_json_output_contract.py](../../tests/cli/regression/test_json_output_contract.py)
+- [test_home_and_hooks.py](../../tests/cli/unit/test_home_and_hooks.py)
+- [test_session_hooks.py](../../tests/workspace/unit/test_session_hooks.py)
 
 ## Operator Examples
 

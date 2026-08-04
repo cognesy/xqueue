@@ -2,31 +2,16 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from collections.abc import Callable
 
 import typer
-
+from xqueue.workers.models import WorkerState
+from xqueue_cli.client import open_client
+from xqueue_cli.contracts import ListResponse, MutationResponse
 from xqueue_cli.output import Output, OutputFormat
 from xqueue_cli.runtime import run_action
-from xqueue_libs.actions.workers import ListWorkersAction, SetWorkerStateAction
-from xqueue_libs.domain.models import WorkerState
-from xqueue_libs.infra.database import create_session_factory, create_sqlite_engine
-from xqueue_libs.services.config import ConfigLoader
-from xqueue_libs.services.database import SessionManager
-from xqueue_libs.services.workers import WorkerService
-
 
 app = typer.Typer(help="Inspect and control persisted worker state.")
-
-
-def _build_session_manager(use_workspace_instance: bool) -> SessionManager:
-    config = ConfigLoader().load(
-        workspace_root=Path.cwd(),
-        use_workspace_instance=use_workspace_instance,
-    )
-    engine = create_sqlite_engine(config.paths.database_path)
-    session_factory = create_session_factory(engine)
-    return SessionManager(session_factory)
 
 
 @app.command("list")
@@ -41,11 +26,11 @@ def list_workers(
     ),
 ) -> None:
     """List workers with queues, heartbeat, and operational state."""
-    action = ListWorkersAction(_build_session_manager(use_workspace_instance), WorkerService())
-    run_action(action, out=Output(ctx, "workers.list", output))
+    with open_client(use_workspace_instance=use_workspace_instance) as xq:
+        run_action(lambda: ListResponse(items=xq.workers.list()), out=Output(ctx, "workers.list", output))
 
 
-def _set_state_command(state: WorkerState):
+def _set_state_command(state: WorkerState) -> Callable[..., None]:
     contract_name = {
         WorkerState.PAUSED: "workers.pause",
         WorkerState.ACTIVE: "workers.resume",
@@ -65,8 +50,11 @@ def _set_state_command(state: WorkerState):
         ),
     ) -> None:
         """Persist a worker state change."""
-        action = SetWorkerStateAction(_build_session_manager(use_workspace_instance), WorkerService())
-        run_action(lambda: action(worker_id, state), out=Output(ctx, contract_name, output))
+        with open_client(use_workspace_instance=use_workspace_instance) as xq:
+            run_action(
+                lambda: MutationResponse(item=xq.workers.set_state(worker_id, state)),
+                out=Output(ctx, contract_name, output),
+            )
 
     return command
 

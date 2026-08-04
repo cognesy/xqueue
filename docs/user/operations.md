@@ -3,18 +3,55 @@
 ## Runtime Model
 
 `xqueue` stores mutable queue state in SQLite and writes attempt logs to files.
-In repository-local development mode, the important paths are:
+Both live in one workspace directory, created by `xq workspace init`:
 
-- `instance/xqueue.db`
-- `instance/run/`
-- `instance/logs/`
-- `instance/config.yaml`
+- `.xqueue/marker.toml` -- what makes the directory a workspace
+- `.xqueue/config.yaml`
+- `.xqueue/xqueue.db`
+- `.xqueue/run/`
+- `.xqueue/logs/`
 
-In normal installed usage, the same paths resolve under `~/.xqueue/`. Use
-`xq -o json config show` to confirm the effective locations on a machine.
+Every command finds that directory by walking up from the working directory.
+Outside a workspace the same paths resolve under the machine-wide instance:
+`XQUEUE_HOME`, or `~/.xqueue/`. Use `xq -o json config show` to confirm the
+effective locations on a machine.
 
 The delivery model is at-least-once. A job can be retried after worker failure
 or stale lease recovery, so commands should be safe to run more than once.
+
+## Configuration
+
+Settings come from several places. Later entries win over earlier ones:
+
+1. the defaults shipped with `xqueue`
+2. `--config <file>` (or `XQUEUE_CONFIG_PATH`), which *replaces* those defaults
+   rather than layering over them
+3. `--env <name>` (or `XQUEUE_ENV`), a shipped overlay such as `staging`,
+   layered over the defaults
+4. your user config directory
+5. `.xqueue/config.yaml` in the workspace
+6. environment variables, one per setting: `XQUEUE_WORKER__RETRY_DELAY_SECONDS`
+   sets `worker.retry_delay_seconds`. The doubled underscore separates the
+   section from the field, and a variable without one is not a setting.
+7. `--set worker.retry_delay_seconds=30`, repeatable
+
+`xq -o json config show` prints the result together with a `layers` list saying
+which of those existed and which actually contributed, which is the fastest way
+to find out why a value is not what you expected:
+
+```sh
+uv run xq -o json config show
+uv run xq --set worker.poll_interval_seconds=0.5 -o json config show
+```
+
+`XQUEUE_HOME`, `XQUEUE_ROOT`, and `XQUEUE_DB_PATH` are not settings. They are
+answered before configuration is read, and they choose *where* the workspace is
+rather than what is in it.
+
+A file that will not load, a key that is not a setting, or a value out of range
+stops the command with an error envelope and exit code 2. Pass `-o json` before
+the subcommand to see one as JSON: the failure happens while the command is
+starting up, before its own `-o` has been read.
 
 ## Output Modes And Logs
 
@@ -54,9 +91,9 @@ Stable JSON shapes:
 Useful examples:
 
 ```sh
-uv run xq jobs list --workspace-instance
-uv run xq -o json jobs show <job-id> --workspace-instance
-uv run xq --fields id,state jobs list --workspace-instance
+uv run xq jobs list
+uv run xq -o json jobs show <job-id>
+uv run xq --fields id,state jobs list
 ```
 
 ## Enqueue Jobs
@@ -65,7 +102,6 @@ The primary v1 model is a shell command string:
 
 ```sh
 uv run xq enqueue \
-  --workspace-instance \
   --queue agent \
   --cwd /repo \
   --timeout-seconds 300 \
@@ -88,7 +124,6 @@ Direct worker mode is the simplest operating path:
 
 ```sh
 uv run xq worker \
-  --workspace-instance \
   --queue agent \
   --concurrency 2 \
   --continuous \
@@ -136,14 +171,13 @@ Important constraint:
 List jobs:
 
 ```sh
-uv run xq -o json jobs list --workspace-instance --queue agent --state queued
+uv run xq -o json jobs list --queue agent --state queued
 ```
 
 Filter by creation/availability windows and choose a sort order:
 
 ```sh
 uv run xq jobs list \
-  --workspace-instance \
   --queue agent \
   --created-after 2026-03-22T20:30:00Z \
   --available-before 2026-03-22T21:00:00Z \
@@ -154,7 +188,7 @@ uv run xq jobs list \
 Show one job, including attempts and events:
 
 ```sh
-uv run xq -o json jobs show <job-id> --workspace-instance
+uv run xq -o json jobs show <job-id>
 ```
 
 The job detail view is the main inspection surface for:
@@ -169,14 +203,13 @@ The job detail view is the main inspection surface for:
 Tail the latest attempt stderr:
 
 ```sh
-uv run xq -o json jobs tail <job-id> --workspace-instance
+uv run xq -o json jobs tail <job-id>
 ```
 
 Tail another stream or attempt:
 
 ```sh
 uv run xq jobs tail <job-id> \
-  --workspace-instance \
   --stream stdout \
   --attempt-number 1 \
   --lines 50 \
@@ -188,7 +221,7 @@ uv run xq jobs tail <job-id> \
 Cancel a queued job immediately:
 
 ```sh
-uv run xq jobs cancel <job-id> --workspace-instance
+uv run xq jobs cancel <job-id>
 ```
 
 For a running job, cancellation is cooperative:
@@ -201,13 +234,13 @@ For a running job, cancellation is cooperative:
 Retry a failed or canceled job without deleting history:
 
 ```sh
-uv run xq jobs retry <job-id> --workspace-instance
+uv run xq jobs retry <job-id>
 ```
 
 Delete a non-running job and its persisted history:
 
 ```sh
-uv run xq -o json jobs delete <job-id> --workspace-instance
+uv run xq -o json jobs delete <job-id>
 ```
 
 `jobs delete` is intended for cleanup. Running jobs are rejected explicitly.
@@ -215,7 +248,7 @@ uv run xq -o json jobs delete <job-id> --workspace-instance
 Purge only queued or retry-scheduled jobs from a queue:
 
 ```sh
-uv run xq jobs purge --queue agent --workspace-instance
+uv run xq jobs purge --queue agent
 ```
 
 ## Queue And Worker Controls
@@ -223,23 +256,23 @@ uv run xq jobs purge --queue agent --workspace-instance
 Pause or resume a queue:
 
 ```sh
-uv run xq queues pause agent --workspace-instance
-uv run xq queues resume agent --workspace-instance
+uv run xq queues pause agent
+uv run xq queues resume agent
 ```
 
 Inspect queue state and counts:
 
 ```sh
-uv run xq -o json queues list --workspace-instance
-uv run xq -o json queues stats --workspace-instance
+uv run xq -o json queues list
+uv run xq -o json queues stats
 ```
 
 Inspect or control worker state:
 
 ```sh
-uv run xq -o json workers list --workspace-instance
-uv run xq workers drain <worker-id> --workspace-instance
-uv run xq workers stop <worker-id> --workspace-instance
+uv run xq -o json workers list
+uv run xq workers drain <worker-id>
+uv run xq workers stop <worker-id>
 ```
 
 Worker states are separate from job states:
@@ -256,15 +289,15 @@ Controller mode supervises configured worker pools. It does not schedule jobs.
 Prefer the pool-management commands over hand-editing YAML:
 
 ```sh
-uv run xq controller pools ensure agent --queue agent --concurrency 2 --workspace-instance
-uv run xq -o json controller pools list --workspace-instance
-uv run xq controller pools remove agent --workspace-instance
+uv run xq controller pools ensure agent --queue agent --concurrency 2
+uv run xq -o json controller pools list
+uv run xq controller pools remove agent
 ```
 
 Changed pool config reports `restart_required`; restart the controller before
 expecting running controller processes to use the new definition.
 
-Example `instance/config.yaml`:
+Example `.xqueue/config.yaml`:
 
 ```yaml
 controller:
@@ -280,18 +313,18 @@ controller:
 Run the controller directly:
 
 ```sh
-uv run xq controller run --workspace-instance --controller-id default
+uv run xq controller run --controller-id default
 ```
 
 Inspect or control it:
 
 ```sh
-uv run xq -o json controller status --workspace-instance
-uv run xq controller pause-intake --workspace-instance
-uv run xq controller resume-intake --workspace-instance
-uv run xq controller drain --workspace-instance
-uv run xq controller restart --workspace-instance
-uv run xq controller stop --workspace-instance
+uv run xq -o json controller status
+uv run xq controller pause-intake
+uv run xq controller resume-intake
+uv run xq controller drain
+uv run xq controller restart
+uv run xq controller stop
 ```
 
 `controller pause-intake` is distinct from `queues pause`:
@@ -309,9 +342,9 @@ Managed service mode is also available:
 Examples:
 
 ```sh
-uv run xq controller install --workspace-instance --platform launchd
-uv run xq controller start --workspace-instance --platform launchd
-uv run xq -o json controller status --workspace-instance --platform launchd
+uv run xq controller install --platform launchd
+uv run xq controller start --platform launchd
+uv run xq -o json controller status --platform launchd
 ```
 
 Only service definitions owned by `xqueue` are managed.
@@ -321,33 +354,32 @@ Only service definitions owned by `xqueue` are managed.
 High-level health:
 
 ```sh
-uv run xq -o json health --workspace-instance
+uv run xq -o json health
 ```
 
 Detailed diagnostics:
 
 ```sh
-uv run xq -o json doctor --workspace-instance
+uv run xq -o json doctor
 ```
 
 Recover stale leases after a worker crash:
 
 ```sh
-uv run xq -o json recover stale-leases --workspace-instance
+uv run xq -o json recover stale-leases
 ```
 
 Database maintenance:
 
 ```sh
-uv run xq -o json db check --workspace-instance
-uv run xq -o json db vacuum --workspace-instance
+uv run xq -o json db check
+uv run xq -o json db vacuum
 ```
 
 Run explicit retention cleanup only when you intend to prune old history:
 
 ```sh
 uv run xq db cleanup-retention \
-  --workspace-instance \
   --older-than-hours 168 \
   --attempts \
   --events \

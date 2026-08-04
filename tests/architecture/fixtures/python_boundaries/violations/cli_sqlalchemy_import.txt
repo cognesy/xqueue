@@ -1,0 +1,3 @@
+apps/cli/bad.py
+---
+from sqlalchemy import select
